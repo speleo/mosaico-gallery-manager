@@ -86,10 +86,20 @@ function gallery(group) {
   assert.ok(!source.includes('mg-gallery-count'), 'old count is removed');
   assert.ok(!source.includes('.draggable'), 'editor extension does not restyle thumbnails');
   const groupSelect = filterRow.children[0].children[1];
-  const orderSelect = filterRow.children[1].children[1];
+  const sortInputRow = filterRow.children[1].children[1];
+  const orderSelect = sortInputRow.children[0];
+  const settingsCog = sortInputRow.children[1];
   assert.equal(orderSelect.style.cssText.includes('height:27px'), true, 'compact selector height');
-  assert.equal(filterRow.children[1].children[0].children[1].textContent, 'Manage',
-    'manager link retained without a separate footer');
+  assert.equal(sortInputRow.children.length, 2, 'cog sits next to Sort by dropdown');
+  assert.equal(settingsCog.id, 'mg-editor-settings', 'cog has stable identifier');
+  assert.equal(settingsCog.textContent, '\u2699', 'settings cog icon is visible');
+  assert.equal(settingsCog.href, config.managerUrl, 'cog opens gallery manager');
+  assert.equal(settingsCog.target, '_blank', 'management opens in a new tab');
+  assert.equal(settingsCog.rel, 'noopener noreferrer', 'new tab cannot control editor');
+  assert.ok(settingsCog.attrs['aria-label'].includes('Manage image groups'),
+    'settings icon is accessible to screen readers');
+  assert.ok(!source.includes("link.textContent = 'Manage'"),
+    'faint Manage text link was removed');
   return {
     list: () => Array.from(live, item => item.name),
     initial: initial.map(item => item.name),
