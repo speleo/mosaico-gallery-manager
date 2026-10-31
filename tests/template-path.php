@@ -21,6 +21,7 @@ class CRM_Core_Smarty {
 class CRM_Core_Page {
   protected static $assignments = [];
   public function assign($key, $value) { self::$assignments[$key] = $value; }
+  public function getAssigned($key) { return self::$assignments[$key] ?? NULL; }
   public function run() { return 'rendered'; }
 }
 class CRM_Core_Permission {
@@ -31,7 +32,13 @@ class CRM_Core_Session {
   public function set($k, $v) {}
 }
 class CRM_Utils_System {
-  public static function url($path, $args, $absolute) { return '/index.php?q=' . $path; }
+  public static function url($path, $args, $absolute, $fragment = NULL, $htmlize = TRUE, $frontend = FALSE, $forceBackend = FALSE) {
+    if (!$forceBackend) {
+      throw new RuntimeException('Admin-only gallery URLs must force WordPress backend routing');
+    }
+    $url = 'https://example.org/wp-admin/admin.php?page=CiviCRM&q=' . rawurlencode($path) . '&' . $args;
+    return $htmlize ? str_replace('&', '&amp;', $url) : $url;
+  }
 }
 class CRM_Core_Resources {
   public static function singleton() { return new self(); }
@@ -48,6 +55,27 @@ require_once dirname(__DIR__) . '/CRM/Mosaicogallery/Page/Gallery.php';
 $page = new CRM_Mosaicogallery_Page_Gallery();
 $page->run();
 $page->run();
+
+$apiUrl = $page->getAssigned('galleryApiUrl');
+// Smarty escapes the attribute when producing markup; the browser decodes it
+// once. If the URL was *already* HTML-escaped, amp;q will be the parsed key.
+$renderedAttribute = htmlspecialchars($apiUrl, ENT_QUOTES, 'UTF-8');
+$browserValue = html_entity_decode($renderedAttribute, ENT_QUOTES, 'UTF-8');
+parse_str((string) parse_url($browserValue, PHP_URL_QUERY), $queryParts);
+if (($queryParts['q'] ?? '') !== 'civicrm/mosaicogallery/api' ||
+    ($queryParts['page'] ?? '') !== 'CiviCRM' ||
+    ($queryParts['reset'] ?? '') !== '1' ||
+    isset($queryParts['amp;q']) ||
+    str_contains($apiUrl, '&amp;')) {
+  throw new RuntimeException('The WordPress API URL was double HTML-escaped');
+}
+$scriptUrls = [];
+mosaicogallery_civicrm_mosaicoScriptUrlsAlter($scriptUrls);
+parse_str((string) parse_url($scriptUrls[0] ?? '', PHP_URL_QUERY), $scriptParts);
+if (($scriptParts['q'] ?? '') !== 'civicrm/mosaicogallery/editorjs' ||
+    isset($scriptParts['amp;q'])) {
+  throw new RuntimeException('Editor script URL was double HTML-escaped');
+}
 
 $smarty = CRM_Core_Smarty::singleton();
 $dirs = $smarty->getTemplateDir();
