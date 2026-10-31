@@ -47,7 +47,7 @@ function mosaicogallery_civicrm_uninstall() {
  * The script only processes GET responses from Mosaico's image gallery list.
  */
 function mosaicogallery_civicrm_mosaicoScriptUrlsAlter(&$scriptUrls) {
-  $scriptUrls[] = CRM_Utils_System::url('civicrm/mosaicogallery/editorjs', 'reset=1', TRUE);
+  $scriptUrls[] = CRM_Utils_System::url('civicrm/mosaicogallery/editorjs', 'reset=1', TRUE, NULL, FALSE, FALSE, TRUE);
 }
 
 /**
