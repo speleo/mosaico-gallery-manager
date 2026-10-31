@@ -46,24 +46,50 @@ function mosaicogallery_civicrm_mosaicoScriptUrlsAlter(&$scriptUrls) {
   $scriptUrls[] = CRM_Utils_System::url('civicrm/mosaicogallery/editorjs', 'reset=1', TRUE);
 }
 
-/** Add a shortcut to Mailings where the standard navigation node exists. */
+/**
+ * Add a shortcut to the standard CiviCRM Mailings navigation menu.
+ *
+ * Unlike xmlMenu() (which defines routes), this hook adds the visible menu
+ * item. Assign stable navID and parentID fields so menu renderers on older
+ * CiviCRM versions can locate the entry; never modify core navigation rows.
+ */
 function mosaicogallery_civicrm_navigationMenu(&$menu) {
-  foreach ($menu as &$item) {
-    if (($item['attributes']['name'] ?? '') !== 'Mailing') { continue; }
-    if (!isset($item['child'])) { $item['child'] = []; }
-    foreach ($item['child'] as $child) {
-      if (($child['attributes']['name'] ?? '') === 'mosaico-gallery-manager') { return; }
+  $maxNavID = 0;
+  array_walk_recursive($menu, function ($value, $key) use (&$maxNavID) {
+    if ($key === 'navID' && is_numeric($value)) {
+      $maxNavID = max($maxNavID, (int) $value);
     }
-    $item['child'][] = [
+  });
+
+  foreach ($menu as $key => &$item) {
+    $attributes = $item['attributes'] ?? [];
+    // "Mailing" is CiviCRM's historical internal name; also accept "Mailings".
+    if (!in_array($attributes['name'] ?? '', ['Mailing', 'Mailings'], TRUE)) {
+      continue;
+    }
+    if (!isset($item['child']) || !is_array($item['child'])) {
+      $item['child'] = [];
+    }
+    foreach ($item['child'] as $child) {
+      if (($child['attributes']['name'] ?? '') === 'mosaico-gallery-manager') {
+        return;
+      }
+    }
+
+    $newID = $maxNavID + 1;
+    $parentID = $attributes['navID'] ?? (is_numeric($key) ? (int) $key : NULL);
+    $item['child'][$newID] = [
       'attributes' => [
         'label' => 'Mosaico Gallery Manager',
         'name' => 'mosaico-gallery-manager',
         'url' => 'civicrm/mosaicogallery',
         'permission' => 'administer CiviCRM',
         'operator' => 'AND',
+        'parentID' => $parentID,
+        'navID' => $newID,
         'active' => 1,
       ],
     ];
-    break;
+    return;
   }
 }
