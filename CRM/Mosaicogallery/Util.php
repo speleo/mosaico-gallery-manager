@@ -3,7 +3,7 @@
  * File inventory and references index. Intentionally read-only for files.
  */
 class CRM_Mosaicogallery_Util {
-  const USAGE_INDEX_VERSION = 2;
+  const USAGE_INDEX_VERSION = 3;
   public static function config() {
     if (!class_exists('CRM_Mosaico_Utils')) {
       throw new RuntimeException('Mosaico is not enabled (CRM_Mosaico_Utils unavailable).');
@@ -198,7 +198,9 @@ class CRM_Mosaicogallery_Util {
     // Each record contributes at most one hit per image, regardless of the
     // number of references in that record or in its component fields.
     $tables = [
-      ['civicrm_mailing', 'body_html'],
+      // Mailing.template_options contains Mosaico editable design JSON,
+      // including mosaicoContent and A/B variants (not just rendered HTML).
+      ['civicrm_mailing', 'CONCAT_WS(" ", body_html, template_options)'],
       ['civicrm_mosaico_template', 'CONCAT_WS(" ", html, metadata, content)'],
       ['civicrm_msg_template', 'msg_html'],
     ];
