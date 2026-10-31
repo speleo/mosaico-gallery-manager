@@ -16,5 +16,7 @@ jobs:
       - name: Smarty template path regression checks
         run: |
           php tests/template-path.php
+      - name: WordPress route and gallery pagination regression
+        run: node tests/pagination-route.js
       - name: JavaScript syntax
         run: find . -name '*.js' -print0 | xargs -0 -n1 node --check
