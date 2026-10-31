@@ -3,7 +3,7 @@
  * File inventory and references index. Intentionally read-only for files.
  */
 class CRM_Mosaicogallery_Util {
-  const USAGE_INDEX_VERSION = 3;
+  const USAGE_INDEX_VERSION = 4;
   public static function config() {
     if (!class_exists('CRM_Mosaico_Utils')) {
       throw new RuntimeException('Mosaico is not enabled (CRM_Mosaico_Utils unavailable).');
@@ -61,7 +61,16 @@ class CRM_Mosaicogallery_Util {
 
   public static function syncInventory() {
     $files = self::files();
-    $known = self::metadata();
+    // Read actual inventory-table rows, NOT metadata(): metadata() also
+    // synthesises entries for images assigned to groups. Those virtual
+    // entries led us to skip inserts and left images without usage rows.
+    $known = [];
+    $dao = CRM_Core_DAO::executeQuery(
+      'SELECT filename FROM civicrm_mosaicogallery_image'
+    );
+    while ($dao->fetch()) {
+      $known[(string) $dao->filename] = TRUE;
+    }
     $added = 0;
     foreach (array_keys($files) as $name) {
       if (!isset($known[$name])) {
@@ -228,19 +237,53 @@ class CRM_Mosaicogallery_Util {
       // Never wipe previously calculated statistics on a partial failure.
       throw new RuntimeException('Usage indexing incomplete; counts unchanged. ' . implode('; ', $errors));
     }
-    // Database writes happen only after all source scans succeeded.
+    // UPSERT is crucial: the older UPDATE silently changed zero rows when an
+    // image had a group assignment but no row in this usage-index table.
+    // Only these three fields are updated on conflict, preserving the
+    // administrator's archived and favourite settings.
     foreach ($counts as $filename => $count) {
       CRM_Core_DAO::executeQuery(
-        'UPDATE civicrm_mosaicogallery_image SET usage_count = %1, last_indexed = NOW(), usage_index_version = %3 WHERE filename = %2',
-        [1 => [$count, 'Integer'], 2 => [$filename, 'String'], 3 => [self::USAGE_INDEX_VERSION, 'Integer']]
+        'INSERT INTO civicrm_mosaicogallery_image ' .
+        '(filename, usage_count, last_indexed, usage_index_version) ' .
+        'VALUES (%1, %2, NOW(), %3) ' .
+        'ON DUPLICATE KEY UPDATE ' .
+        'usage_count = VALUES(usage_count), ' .
+        'last_indexed = VALUES(last_indexed), ' .
+        'usage_index_version = VALUES(usage_index_version)',
+        [1 => [$filename, 'String'], 2 => [$count, 'Integer'],
+          3 => [self::USAGE_INDEX_VERSION, 'Integer']]
       );
     }
-    $matched = count(array_filter($counts, static function ($count) { return $count > 0; }));
+
+    // Never claim "190 images have references" based only on the calculated
+    // values. Compare every value against the SAME table that provides the
+    // per-image counts in the gallery. Missing/mismatched rows are an error.
+    $persisted = [];
+    $dao = CRM_Core_DAO::executeQuery(
+      'SELECT filename, usage_count FROM civicrm_mosaicogallery_image'
+    );
+    while ($dao->fetch()) {
+      $filename = (string) $dao->filename;
+      if (array_key_exists($filename, $counts)) {
+        $persisted[$filename] = (int) $dao->usage_count;
+      }
+    }
+    foreach ($counts as $filename => $expected) {
+      if (!array_key_exists($filename, $persisted) ||
+          $persisted[$filename] !== $expected) {
+        throw new RuntimeException(
+          'Usage count database verification failed for image ' .
+          $filename . '; the displayed usage statistics may be incomplete.'
+        );
+      }
+    }
+
+    $matched = count(array_filter($persisted, static function ($count) { return $count > 0; }));
     return [
       'sources' => $sources,
-      'images' => count($counts),
+      'images' => count($persisted),
       'matched_images' => $matched,
-      'unmatched_images' => count($counts) - $matched,
+      'unmatched_images' => count($persisted) - $matched,
     ];
   }
 
