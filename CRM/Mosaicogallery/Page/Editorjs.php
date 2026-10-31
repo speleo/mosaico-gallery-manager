@@ -16,10 +16,12 @@ class CRM_Mosaicogallery_Page_Editorjs extends CRM_Core_Page {
         'favourite' => !empty($meta[$name]['favourite']),
         'usage_count' => (int) ($meta[$name]['usage_count'] ?? 0),
         'mtime' => (int) $file['mtime'],
+        'group_id' => (int) ($meta[$name]['group_id'] ?? 0),
       ];
     }
     $conf = [
       'entries' => $entries,
+      'groups' => CRM_Mosaicogallery_Groups::all(),
       'managerUrl' => CRM_Utils_System::url('civicrm/mosaicogallery', 'reset=1', TRUE, NULL, FALSE, FALSE, TRUE),
       'canManage' => CRM_Core_Permission::check('administer CiviCRM'),
     ];
