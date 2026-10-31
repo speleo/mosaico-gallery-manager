@@ -1,11 +1,32 @@
-name: Syntax checks
+# Run complete validation when a change is proposed, and when a release
+# version or this workflow is changed on main. Do NOT run on every intermediate
+# source-file commit: the GitHub Contents API commits files one at a time.
+name: Extension validation
 
 on:
-  push:
   pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - info.xml
+      - .github/workflows/syntax-check.yml
+  workflow_dispatch:
+
+# If a newer validation supersedes a queued/running one, only the newer run
+# matters. GitHub may still report a completed failed release, appropriately.
+concurrency:
+  group: extension-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   syntax:
+    name: PHP, JavaScript and regression checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +45,7 @@ jobs:
       - name: Navigation registration regression checks
         run: php tests/navigation-menu.php
       - name: Smarty template path regression checks
-        run: |
-          php tests/template-path.php
+        run: php tests/template-path.php
       - name: WordPress route and gallery pagination regression
         run: node tests/pagination-route.js
       - name: JavaScript syntax
