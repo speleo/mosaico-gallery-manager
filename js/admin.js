@@ -36,10 +36,9 @@
       // Reuse the CMS routing of the manager page that loaded successfully.
       var current = new URL(location.href);
       if (current.pathname.endsWith('/wp-admin/admin.php') &&
-          current.searchParams.has('page') &&
-          current.searchParams.get('page') !== '1') {
+          current.searchParams.has('page')) {
         url = new URL(current.origin + current.pathname);
-        url.searchParams.set('page', current.searchParams.get('page'));
+        url.searchParams.set('page', current.searchParams.get('page') === '1' ? 'CiviCRM' : current.searchParams.get('page'));
         url.searchParams.set('q', 'civicrm/mosaicogallery/api');
         url.searchParams.set('reset', '1');
       }
