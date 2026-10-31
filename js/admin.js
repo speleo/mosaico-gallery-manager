@@ -233,7 +233,9 @@
           var filename = node('div', 'mg-name', item.name);
           filename.title = item.name;
           info.appendChild(filename);
-          info.appendChild(node('div', 'mg-detail', 'Used in ' + item.usage_count + ' saved records'));
+          info.appendChild(node('div', 'mg-detail', item.usage_count > 0
+            ? 'Used in ' + item.usage_count + ' saved record' + (item.usage_count === 1 ? '' : 's')
+            : 'No saved references found'));
           info.appendChild(node('div', 'mg-detail', item.date));
           var groupRow = node('div', 'mg-assignment');
           var check = node('input');
