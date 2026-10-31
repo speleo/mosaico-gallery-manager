@@ -11,6 +11,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: PHP syntax
         run: find . -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Image groups regression checks
+        run: php tests/groups.php
+      - name: Editor image-group filtering checks
+        run: node tests/preview-editor-filter.js
       - name: Navigation registration regression checks
         run: php tests/navigation-menu.php
       - name: Smarty template path regression checks
