@@ -43,9 +43,20 @@
         headers: method === 'POST' ? {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'} : {},
         body: body
       });
+      // Read once and report diagnostics without including response HTML,
+      // which may contain private CiviCRM information.
+      var raw = await response.text();
       var json;
-      try { json = await response.json(); } catch (ignore) { throw new Error('Server did not return valid JSON. Check CiviCRM logs.'); }
-      if (!response.ok || !json.ok) { throw new Error(json.error || 'Request failed.'); }
+      try {
+        json = JSON.parse(raw);
+      } catch (ignore) {
+        var kind = /^\s*</.test(raw) ? 'HTML' : 'non-JSON content';
+        var type = response.headers.get('content-type') || 'unknown content type';
+        var redirected = response.redirected ? ', redirected' : '';
+        throw new Error('Gallery API returned ' + kind + ' instead of JSON (HTTP ' +
+          response.status + ', ' + type + redirected + '). Check the API URL and CiviCRM logs.');
+      }
+      if (!response.ok || !json || !json.ok) { throw new Error((json && json.error) || 'Gallery API request failed (HTTP ' + response.status + ').'); }
       return json.data;
     }
     async function load() {
