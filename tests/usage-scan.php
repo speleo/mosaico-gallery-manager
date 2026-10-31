@@ -88,6 +88,8 @@ $result = CRM_Mosaicogallery_Util::refreshUsage();
 ksort(CRM_Core_DAO::$images);
 ksort($expected);
 ok($result['sources'] === 6, 'six saved records should be scanned');
+ok($result['matched_images'] === 3 && $result['unmatched_images'] === 1,
+  'scan reports three referenced images and one genuinely unmatched image');
 ok(CRM_Core_DAO::$images === $expected, 'usage counts must match actual references, including genuine zero. Got: ' . var_export(CRM_Core_DAO::$images, TRUE) . ' expected: ' . var_export($expected, TRUE));
 ok(count(array_unique(CRM_Core_DAO::$scanned)) === 1 &&
   current(CRM_Core_DAO::$scanned) === CRM_Mosaicogallery_Util::USAGE_INDEX_VERSION, 'version persisted');
