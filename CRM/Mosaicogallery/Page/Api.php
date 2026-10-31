@@ -30,7 +30,7 @@ class CRM_Mosaicogallery_Page_Api extends CRM_Core_Page {
           $search = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
           if (!in_array($filter, ['active', 'archived', 'all', 'favourites'], TRUE)) { $filter = 'active'; }
           if (!in_array($sort, ['recent', 'popular', 'name', 'favourites'], TRUE)) { $sort = 'recent'; }
-          $out = CRM_Mosaicogallery_Util::listing($filter, $sort, substr($search, 0, 255), (int) ($_GET['mg_page'] ?? 1));
+          $out = CRM_Mosaicogallery_Util::listing($filter, $sort, substr($search, 0, 255), (int) ($_GET['mg_page'] ?? 1), 60, isset($_GET['group']) && is_string($_GET['group']) ? $_GET['group'] : 'all');
           break;
         case 'sync':
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
@@ -39,6 +39,27 @@ class CRM_Mosaicogallery_Page_Api extends CRM_Core_Page {
         case 'usage':
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
           $out = CRM_Mosaicogallery_Util::refreshUsage();
+          break;
+
+        case 'create_group':
+          if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
+          $title = isset($_POST['title']) && is_string($_POST['title']) ? $_POST['title'] : '';
+          $out = CRM_Mosaicogallery_Groups::create($title);
+          break;
+        case 'rename_group':
+          if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
+          $title = isset($_POST['title']) && is_string($_POST['title']) ? $_POST['title'] : '';
+          $out = CRM_Mosaicogallery_Groups::rename($_POST['group_id'] ?? '', $title);
+          break;
+        case 'delete_group':
+          if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
+          CRM_Mosaicogallery_Groups::remove($_POST['group_id'] ?? '');
+          $out = ['deleted' => TRUE];
+          break;
+        case 'assign_group':
+          if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
+          $names = $_POST['filenames'] ?? [];
+          $out = CRM_Mosaicogallery_Groups::assign($names, $_POST['group_id'] ?? '');
           break;
         case 'setflag':
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
