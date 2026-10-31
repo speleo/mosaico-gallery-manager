@@ -106,7 +106,7 @@ const context = {
         'Automatic usage refresh sends the CSRF token');
       return {
         ok: true, status: 200, headers: {get: () => 'application/json'},
-        text: async () => JSON.stringify({ok: true, data: {sources: 12, images: 30}}),
+        text: async () => JSON.stringify({ok: true, data: {sources: 12, images: 30, matched_images: 8, unmatched_images: 22}}),
       };
     }
     requests.push(parsed);
