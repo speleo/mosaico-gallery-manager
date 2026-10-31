@@ -17,6 +17,15 @@ class Element {
     this.events = {};
     this.textContent = '';
     this.className = '';
+    this.checked = false;
+    this.classList = {
+      contains: name => this.className.split(/\\s+/).includes(name),
+      toggle: (name, enabled) => {
+        const classes = new Set(this.className.split(/\\s+/).filter(Boolean));
+        if (enabled) {classes.add(name);} else {classes.delete(name);}
+        this.className = Array.from(classes).join(' ');
+      },
+    };
   }
   getAttribute(name) { return this.attrs[name] ?? null; }
   setAttribute(name, value) { this.attrs[name] = value; }
@@ -24,6 +33,21 @@ class Element {
   appendChild(child) { this.children.push(child); return child; }
   replaceChildren(...children) { this.children = children; }
   addEventListener(event, fn) { this.events[event] = fn; }
+  descendants() {
+    return this.children.flatMap(child =>
+      [child].concat(typeof child.descendants === 'function' ? child.descendants() : []));
+  }
+  querySelectorAll(selector) {
+    if (selector === 'input.mg-select-image') {
+      return this.descendants().filter(node =>
+        node.tagName === 'input' && node.classList.contains('mg-select-image'));
+    }
+    if (selector === '.mg-picture-select') {
+      return this.descendants().filter(node => node.classList.contains('mg-picture-select'));
+    }
+    return [];
+  }
+  querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
 }
 
 const ids = new Map();
@@ -47,6 +71,16 @@ const context = {
     readyState: 'complete',
     getElementById: id => ids.get(id),
     createElement: tag => new Element(tag),
+    querySelectorAll(selector) {
+      const grid = ids.get('mg-grid');
+      if (selector === '#mg-grid .mg-card') {
+        return grid.children.filter(card => card.classList.contains('mg-card'));
+      }
+      if (selector === '#mg-grid input.mg-select-image') {
+        return grid.querySelectorAll('input.mg-select-image');
+      }
+      return [];
+    },
   },
   location: {href: original},
   URL, URLSearchParams,
@@ -83,6 +117,10 @@ function settle() { return new Promise(resolve => setTimeout(resolve, 5)); }
   // Click a thumbnail to select without changing its group.
   ids.get('mg-grid').children[0].children[0].events.click();
   assert.equal(ids.get('mg-bulk-count').textContent, '1 photo selected');
+  assert.equal(ids.get('mg-grid').children[0].classList.contains('mg-selected'), true,
+    'selected image card has the highlighted visual state');
+  assert.equal(ids.get('mg-grid').children[0].querySelector('.mg-picture-select').attrs['aria-pressed'], 'true',
+    'thumbnail selection is exposed to assistive technology');
   assert.equal(requests[0].searchParams.get('page'), 'CiviCRM');
   assert.equal(requests[0].searchParams.get('mg_page'), '1');
   assert.equal(requests[0].searchParams.get('q'), 'civicrm/mosaicogallery');
