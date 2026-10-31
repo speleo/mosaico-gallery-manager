@@ -7,7 +7,7 @@ class CRM_Mosaicogallery_Page_Gallery extends CRM_Core_Page {
     $session = CRM_Core_Session::singleton();
     $token = bin2hex(random_bytes(24));
     $session->set('mosaicogallery_csrf', $token);
-    $this->assign('galleryApiUrl', CRM_Utils_System::url('civicrm/mosaicogallery/api', 'reset=1', TRUE));
+    $this->assign('galleryApiUrl', CRM_Utils_System::url('civicrm/mosaicogallery/api', 'reset=1', TRUE, NULL, FALSE, FALSE, TRUE));
     $this->assign('galleryCsrfToken', $token);
     // Register the extension template only when this page is requested.
     // CiviCRM 6.x wraps Smarty and forwards methods through __call(), so
