@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.1.1-beta2 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.1.2-beta3 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -75,3 +75,7 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 5. You can alternatively add a manual link via **Administer → Customize Data and Screens → Navigation Menu**, setting the URL to `civicrm/mosaicogallery`, but prefer allowing the extension's navigation hook to register it.
 
 **Updating an existing installation:** deploy the new source files to your configured CiviCRM extensions folder (the same directory as the original files), refresh extension metadata if needed, and clear CiviCRM caches. Pushing a change to GitHub will not update files on a WordPress server by itself. Do not uninstall/reinstall: flags and archive metadata must be preserved.
+
+## Smarty template not found
+
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.1.2-beta3 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
