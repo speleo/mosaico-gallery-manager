@@ -1,6 +1,13 @@
 <?php
 class CRM_Mosaicogallery_Page_Gallery extends CRM_Core_Page {
   public function run() {
+    // Serve AJAX through the manager route itself. WordPress may reject a
+    // second admin.php?page=... route before CiviCRM can run it.
+    if (isset($_REQUEST['mg_ajax']) && $_REQUEST['mg_ajax'] === '1') {
+      require_once __DIR__ . '/Api.php';
+      (new CRM_Mosaicogallery_Page_Api())->run();
+      return;
+    }
     if (!CRM_Core_Permission::check('administer CiviCRM')) {
       CRM_Core_Error::fatal('Permission denied.');
     }
