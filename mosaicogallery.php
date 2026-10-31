@@ -70,6 +70,15 @@ function mosaicogallery_civicrm_mosaicoScriptUrlsAlter(&$scriptUrls) {
 }
 
 /**
+ * Use Mosaico's documented plugin hook to receive the editor view model.
+ * This is preferable to guessing Knockout globals or manipulating image tiles.
+ * The actual gallery filter lives in the already-loaded editor.js script.
+ */
+function mosaicogallery_civicrm_mosaicoPlugin(&$plugins) {
+  $plugins[] = 'function(vm) { if (window.mosaicogalleryBindViewModel) { window.mosaicogalleryBindViewModel(vm); } }';
+}
+
+/**
  * Add a shortcut to the standard CiviCRM Mailings navigation menu.
  *
  * Unlike xmlMenu() (which defines routes), this hook adds the visible menu
