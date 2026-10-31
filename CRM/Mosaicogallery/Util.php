@@ -235,7 +235,13 @@ class CRM_Mosaicogallery_Util {
         [1 => [$count, 'Integer'], 2 => [$filename, 'String'], 3 => [self::USAGE_INDEX_VERSION, 'Integer']]
       );
     }
-    return ['sources' => $sources, 'images' => count($counts)];
+    $matched = count(array_filter($counts, static function ($count) { return $count > 0; }));
+    return [
+      'sources' => $sources,
+      'images' => count($counts),
+      'matched_images' => $matched,
+      'unmatched_images' => count($counts) - $matched,
+    ];
   }
 
   public static function extractNames($document) {
