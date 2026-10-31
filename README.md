@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.1.0-beta1 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.1.1-beta2 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -65,3 +65,13 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 - Re-run usage count and confirm it agrees with a manually sampled mailing/template.
 - Make sure uploading a fresh image still works and shows up in the selector.
 - Test with a non-admin editor and an administrator.
+
+## Troubleshooting: the Mailings menu link does not appear
+
+1. Confirm that **Mosaico Gallery Manager** is **Enabled** in **Administer → System Settings → Extensions**. An extension uploaded only to GitHub is **not automatically deployed** to the WordPress server.
+2. In **Administer → System Settings → Cleanup Caches and Update Paths**, clear the CiviCRM system and navigation caches. When using the CLI, run `cv flush` from the CiviCRM root (if `cv` is installed).
+3. Open the route directly while logged in as a CiviCRM administrator. On WordPress, the admin route is often `https://YOUR-SITE/wp-admin/admin.php?page=CiviCRM&q=civicrm/mosaicogallery&reset=1`. With front-end clean URLs enabled, `https://YOUR-SITE/civicrm/mosaicogallery?reset=1` may also work. Use the actual URL format from an existing CiviCRM link on your site.
+4. If direct access works but the navigation item does not, the cause is the navigation cache/menu configuration. If you receive *Page Not Found*, the extension route is not registered: verify the extension folder name, activation and run the CiviCRM cache/route rebuild. If you receive *Permission Denied*, ensure you have **administer CiviCRM** permission. If an internal server error occurs, inspect the CiviCRM log.
+5. You can alternatively add a manual link via **Administer → Customize Data and Screens → Navigation Menu**, setting the URL to `civicrm/mosaicogallery`, but prefer allowing the extension's navigation hook to register it.
+
+**Updating an existing installation:** deploy the new source files to your configured CiviCRM extensions folder (the same directory as the original files), refresh extension metadata if needed, and clear CiviCRM caches. Pushing a change to GitHub will not update files on a WordPress server by itself. Do not uninstall/reinstall: flags and archive metadata must be preserved.
