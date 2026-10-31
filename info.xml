@@ -2,11 +2,11 @@
 <extension key="org.bec.mosaicogallery" type="module">
   <file>mosaicogallery</file>
   <name>Mosaico Gallery Manager</name>
-  <description>Manage Mosaico image listings without moving or deleting historic mailing images.</description>
+  <description>Manage Mosaico images with groups, search, archive flags and usage statistics, preserving historic mailing images.</description>
   <license>AGPL-3.0-or-later</license>
   <maintainer><author>BEC</author></maintainer>
   <releaseDate>2026-10-31</releaseDate>
-  <version>0.1.7-beta8</version>
+  <version>0.2.0-beta1</version>
   <develStage>beta</develStage>
   <compatibility><ver>5.70</ver></compatibility>
   <requires><ext>uk.co.vedaconsulting.mosaico</ext></requires>
