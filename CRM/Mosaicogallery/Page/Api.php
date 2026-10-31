@@ -58,7 +58,9 @@ class CRM_Mosaicogallery_Page_Api extends CRM_Core_Page {
           break;
         case 'assign_group':
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
-          $names = $_POST['filenames'] ?? [];
+          $namesJson = isset($_POST['filenames']) && is_string($_POST['filenames']) ? $_POST['filenames'] : '[]';
+          $names = json_decode($namesJson, TRUE);
+          if (!is_array($names)) { throw new InvalidArgumentException('Invalid image selection.'); }
           $out = CRM_Mosaicogallery_Groups::assign($names, $_POST['group_id'] ?? '');
           break;
         case 'setflag':
