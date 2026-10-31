@@ -127,16 +127,6 @@
     label.style.cssText = 'font:11px/12px Arial,sans-serif;';
     caption.appendChild(label);
 
-    if (manageUrl) {
-      var link = document.createElement('a');
-      link.href = manageUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = 'Manage';
-      link.style.cssText = 'font:10px/12px Arial,sans-serif;white-space:nowrap;';
-      link.setAttribute('aria-label', 'Manage gallery images');
-      caption.appendChild(link);
-    }
     wrapper.appendChild(caption);
 
     var select = document.createElement('select');
@@ -151,7 +141,29 @@
     });
     select.value = value;
     select.addEventListener('change', function () { changed(select.value); });
-    wrapper.appendChild(select);
+
+    if (manageUrl) {
+      // Keep the cog beside the Sort by dropdown, not in the label row.
+      // Only administrators receive a management URL.
+      var inputRow = document.createElement('div');
+      inputRow.style.cssText = 'display:flex;align-items:center;gap:4px;min-width:0;';
+      select.style.flex = '1 1 auto';
+      inputRow.appendChild(select);
+
+      var gear = document.createElement('a');
+      gear.href = manageUrl;
+      gear.id = 'mg-editor-settings';
+      gear.target = '_blank';
+      gear.rel = 'noopener noreferrer';
+      gear.textContent = '\u2699';
+      gear.title = 'Manage image groups and photos (opens in a new tab)';
+      gear.setAttribute('aria-label', 'Manage image groups and photos (opens in a new tab)');
+      gear.style.cssText = 'display:flex;align-items:center;justify-content:center;flex:0 0 27px;width:27px;height:27px;box-sizing:border-box;border:1px solid #a9b8c3;border-radius:4px;background:#fff;color:#304f61;text-decoration:none;font:21px/1 Arial,sans-serif;';
+      inputRow.appendChild(gear);
+      wrapper.appendChild(inputRow);
+    } else {
+      wrapper.appendChild(select);
+    }
     return wrapper;
   }
 
