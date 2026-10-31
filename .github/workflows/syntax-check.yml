@@ -17,6 +17,8 @@ jobs:
         run: php tests/groups.php
       - name: Automatic usage-index freshness checks
         run: php tests/usage-freshness.php
+      - name: Usage reference counting and persistence checks
+        run: php tests/usage-scan.php
       - name: Editor image-group filtering checks
         run: node tests/preview-editor-filter.js
       - name: Navigation registration regression checks
