@@ -36,6 +36,10 @@ class CRM_Mosaicogallery_Page_Api extends CRM_Core_Page {
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
           $out = CRM_Mosaicogallery_Util::syncInventory();
           break;
+        case 'usage_status':
+          if ($method !== 'GET') { throw new InvalidArgumentException('Use GET.'); }
+          $out = ['needs_refresh' => CRM_Mosaicogallery_Util::usageIndexDue()];
+          break;
         case 'usage':
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
           $out = CRM_Mosaicogallery_Util::refreshUsage();
