@@ -157,6 +157,40 @@ class CRM_Mosaicogallery_Util {
   }
 
   /**
+   * Return TRUE when usage counts should be refreshed before showing the
+   * manager. Existing counts are reused for 24 hours. A newly uploaded image
+   * that is not in the index (or has never been scanned) triggers a refresh.
+   *
+   * Check only files that still exist. Old metadata for missing files is
+   * deliberately retained and must not cause a permanent refresh loop.
+   *
+   * A read-only check: callers must explicitly POST the existing protected
+   * 'usage' action to perform the potentially expensive index operation.
+   */
+  public static function usageIndexDue($files = NULL) {
+    $files = $files === NULL ? self::files() : $files;
+    if (!$files) {
+      return FALSE;
+    }
+
+    $fresh = [];
+    $dao = CRM_Core_DAO::executeQuery(
+      'SELECT filename, ' .
+      'IF(last_indexed IS NULL OR last_indexed < DATE_SUB(NOW(), INTERVAL 24 HOUR), 1, 0) AS stale ' .
+      'FROM civicrm_mosaicogallery_image'
+    );
+    while ($dao->fetch()) {
+      $fresh[(string) $dao->filename] = !(bool) $dao->stale;
+    }
+    foreach ($files as $filename => $_file) {
+      if (empty($fresh[$filename])) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Count distinct stored mailing/template records referencing each image.
    * Counts are NOT number of recipients or opens. Missing tables are reported.
    */
