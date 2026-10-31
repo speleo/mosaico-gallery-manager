@@ -207,3 +207,16 @@ The management page now reports how many saved records were scanned and how many
 **Checks:** `php tests/usage-scan.php` includes a saved mailing with a Mosaico `template_options` reference, an A/B record using the same image twice, and a genuinely unused image. `php tests/usage-freshness.php` confirms older algorithm versions trigger exactly one recount.
 
 No further database schema change is needed from v0.2.5-beta6. Earlier installations must first apply the existing usage-index version column upgrade. Back up the database before schema upgrades, and test on staging if possible.
+
+## GitHub validation and email notifications
+
+GitHub Actions validates PHP syntax, JavaScript syntax, and the image manager's regression tests. To prevent the old flood of **Run failed: Syntax checks** emails during development, the workflow now runs:
+
+- **For pull requests into `main`**: checks the complete proposed changes before merging.
+- **For a deliberate release/version change to `info.xml` on `main`**: tests the release before it is installed on the server.
+- **When the workflow file itself changes**: validates the changed checks.
+- **On demand**: GitHub → Actions → Extension validation → Run workflow.
+
+Individual code, test, or documentation commits pushed directly to `main` **do not automatically trigger this workflow** unless they also change `info.xml`. Therefore, **make functional changes on a feature branch and open a pull request**; merge only once its checks pass. Keep the version bump as the final commit when releasing directly to main. Superseded in-progress checks are cancelled to avoid redundant notifications. Genuine failures on pull requests or release commits continue to report errors normally. The workflow is not disabled and existing tests have not been weakened.
+
+The numerous failure emails from 31 October 2026 were for intermediate commits while tests and new classes were being added one at a time. The latest complete main commit was green before this workflow change. The historic notification emails cannot be recalled by editing GitHub Actions.
