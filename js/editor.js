@@ -6,7 +6,15 @@
   var $ = window.jQuery;
   var key = 'mosaicogallery-order';
   var current = 'recent';
-  try { current = localStorage.getItem(key) || 'recent'; } catch (ignore) {}
+  var currentGroup = 'all';
+  try {
+    current = localStorage.getItem(key) || 'recent';
+    currentGroup = localStorage.getItem('mosaicogallery-group') || 'all';
+  } catch (ignore) {}
+  var validGroups = (config.groups || []).map(function (group) { return String(group.id); });
+  if (currentGroup !== 'all' && currentGroup !== 'ungrouped' && validGroups.indexOf(currentGroup) === -1) {
+    currentGroup = 'all';
+  }
 
   // Mosaico uses jQuery File Upload to request its image catalogue. We do
   // not intercept uploads, image rendering, or any HTML for existing mailings.
@@ -24,7 +32,10 @@
       if (data.files.length && !data.files.some(function (f) { return f && /images\/uploads\//.test(f.url || ''); })) { return raw; }
       data.files = data.files.filter(function (item) {
         var state = config.entries[item.name];
-        return !state || !state.archived;
+        if (state && state.archived) { return false; }
+        if (currentGroup === 'all') { return true; }
+        var groupId = Number((state && state.group_id) || 0);
+        return currentGroup === 'ungrouped' ? groupId === 0 : groupId === Number(currentGroup);
       });
       data.files.sort(function (a, b) {
         var am = config.entries[a.name] || {}, bm = config.entries[b.name] || {};
@@ -59,7 +70,29 @@
       hint.textContent = 'Reopen gallery to apply';
     });
     label.appendChild(select);
+
     bar.appendChild(label);
+    var groupLabel = document.createElement('label');
+    groupLabel.style.cssText = 'display:block;margin-top:6px;';
+    groupLabel.textContent = 'Image group: ';
+    var groupSelect = document.createElement('select');
+    groupSelect.setAttribute('aria-label', 'Filter image group');
+    var groupOptions = [{id:'all', title:'All groups'}, {id:'ungrouped', title:'Ungrouped'}];
+    (config.groups || []).forEach(function (group) { groupOptions.push({id: String(group.id), title: group.title}); });
+    groupOptions.forEach(function (group) {
+      var option = document.createElement('option');
+      option.value = group.id;
+      option.textContent = group.title;
+      groupSelect.appendChild(option);
+    });
+    groupSelect.value = currentGroup;
+    groupSelect.addEventListener('change', function () {
+      currentGroup = groupSelect.value;
+      try { localStorage.setItem('mosaicogallery-group', currentGroup); } catch (ignore) {}
+      hint.textContent = 'Reopen gallery to apply filters';
+    });
+    groupLabel.appendChild(groupSelect);
+    bar.appendChild(groupLabel);
     var hint = document.createElement('small');
     hint.style.cssText = 'display:block;color:#667; margin-top:4px;';
     hint.textContent = 'Archived images are hidden';
