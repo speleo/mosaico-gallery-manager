@@ -67,6 +67,8 @@ const original = 'https://bec-cave.org.uk/wp/wp-admin/admin.php?page=CiviCRM&q=c
 const requests = [];
 const posted = [];
 let usageStatusChecks = 0;
+let usageRefreshes = 0;
+const initializationSteps = [];
 const context = {
   document: {
     readyState: 'complete',
@@ -90,12 +92,27 @@ const context = {
     const parsed = new URL(url);
     if (parsed.searchParams.get('action') === 'usage_status') {
       usageStatusChecks++;
+      initializationSteps.push('status');
       return {
         ok: true, status: 200, headers: {get: () => 'application/json'},
-        text: async () => JSON.stringify({ok: true, data: {needs_refresh: false}}),
+        text: async () => JSON.stringify({ok: true, data: {needs_refresh: true}}),
+      };
+    }
+    if (parsed.searchParams.get('action') === 'usage') {
+      usageRefreshes++;
+      initializationSteps.push('refresh');
+      assert.equal(options.method, 'POST', 'Usage recount must use protected POST action');
+      assert.equal(new URLSearchParams(options.body).get('token'), 'fake',
+        'Automatic usage refresh sends the CSRF token');
+      return {
+        ok: true, status: 200, headers: {get: () => 'application/json'},
+        text: async () => JSON.stringify({ok: true, data: {sources: 12, images: 30}}),
       };
     }
     requests.push(parsed);
+    if (parsed.searchParams.get('action') === 'list' && !initializationSteps.includes('listed')) {
+      initializationSteps.push('listed');
+    }
     if (options.method === 'POST') {
       posted.push(new URLSearchParams(options.body));
       return {
@@ -122,6 +139,9 @@ function settle() { return new Promise(resolve => setTimeout(resolve, 5)); }
 (async () => {
   await settle();
   assert.equal(usageStatusChecks, 1, 'initial gallery load checks usage freshness once');
+  assert.equal(usageRefreshes, 1, 'missing usage counts are indexed automatically');
+  assert.deepEqual(initializationSteps, ['status', 'refresh', 'listed'],
+    'gallery lists images only after automatic usage refresh');
   assert.equal(requests.length, 1);
   // Click a thumbnail to select without changing its group.
   ids.get('mg-grid').children[0].children[0].events.click();
