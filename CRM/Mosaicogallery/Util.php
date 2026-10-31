@@ -3,6 +3,7 @@
  * File inventory and references index. Intentionally read-only for files.
  */
 class CRM_Mosaicogallery_Util {
+  const USAGE_INDEX_VERSION = 2;
   public static function config() {
     if (!class_exists('CRM_Mosaico_Utils')) {
       throw new RuntimeException('Mosaico is not enabled (CRM_Mosaico_Utils unavailable).');
@@ -157,30 +158,26 @@ class CRM_Mosaicogallery_Util {
   }
 
   /**
-   * Return TRUE when usage counts should be refreshed before showing the
-   * manager. Existing counts are reused for 24 hours. A newly uploaded image
-   * that is not in the index (or has never been scanned) triggers a refresh.
-   *
-   * Check only files that still exist. Old metadata for missing files is
-   * deliberately retained and must not cause a permanent refresh loop.
-   *
-   * A read-only check: callers must explicitly POST the existing protected
-   * 'usage' action to perform the potentially expensive index operation.
+   * Persisted usage_count values are reused until a new image appears or the
+   * matching algorithm version changes. No daily rescan on page opening.
    */
   public static function usageIndexDue($files = NULL) {
     $files = $files === NULL ? self::files() : $files;
     if (!$files) {
       return FALSE;
     }
-
+    if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists(
+      'civicrm_mosaicogallery_image', 'usage_index_version'
+    )) {
+      throw new RuntimeException('Gallery usage index upgrade required. Apply the pending Mosaico Gallery Manager database upgrade.');
+    }
     $fresh = [];
     $dao = CRM_Core_DAO::executeQuery(
-      'SELECT filename, ' .
-      'IF(last_indexed IS NULL OR last_indexed < DATE_SUB(NOW(), INTERVAL 24 HOUR), 1, 0) AS stale ' .
-      'FROM civicrm_mosaicogallery_image'
+      'SELECT filename, last_indexed, usage_index_version FROM civicrm_mosaicogallery_image'
     );
     while ($dao->fetch()) {
-      $fresh[(string) $dao->filename] = !(bool) $dao->stale;
+      $fresh[(string) $dao->filename] =
+        !empty($dao->last_indexed) && (int) $dao->usage_index_version === self::USAGE_INDEX_VERSION;
     }
     foreach ($files as $filename => $_file) {
       if (empty($fresh[$filename])) {
@@ -198,9 +195,12 @@ class CRM_Mosaicogallery_Util {
     self::syncInventory();
     $files = self::files();
     $counts = array_fill_keys(array_keys($files), 0);
+    // Each record contributes at most one hit per image, regardless of the
+    // number of references in that record or in its component fields.
     $tables = [
       ['civicrm_mailing', 'body_html'],
-      ['civicrm_mosaico_template', 'CONCAT_WS(" ", html, metadata)'],
+      ['civicrm_mosaico_template', 'CONCAT_WS(" ", html, metadata, content)'],
+      ['civicrm_msg_template', 'msg_html'],
     ];
     $sources = 0;
     $errors = [];
@@ -229,19 +229,34 @@ class CRM_Mosaicogallery_Util {
     // Database writes happen only after all source scans succeeded.
     foreach ($counts as $filename => $count) {
       CRM_Core_DAO::executeQuery(
-        'UPDATE civicrm_mosaicogallery_image SET usage_count = %1, last_indexed = NOW() WHERE filename = %2',
-        [1 => [$count, 'Integer'], 2 => [$filename, 'String']]
+        'UPDATE civicrm_mosaicogallery_image SET usage_count = %1, last_indexed = NOW(), usage_index_version = %3 WHERE filename = %2',
+        [1 => [$count, 'Integer'], 2 => [$filename, 'String'], 3 => [self::USAGE_INDEX_VERSION, 'Integer']]
       );
     }
     return ['sources' => $sources, 'images' => count($counts)];
   }
 
   public static function extractNames($document) {
-    // Handle both escaped JSON URLs and percent-encoded URL components.
-    $document = str_replace('\\/', '/', $document);
-    $document = rawurldecode($document);
-    $matches = [];
-    preg_match_all('~images/uploads/(?:static/|thumbnails/)?([A-Za-z0-9._+%()\-]+\.(?:jpe?g|png|gif|webp))(?=[^A-Za-z0-9._+-]|$)~i', $document, $matches);
-    return array_values(array_unique($matches[1] ?? []));
+    // Handle HTML/CSS URLs, Mosaico editable JSON and nested URL encoding.
+    // Do not treat an arbitrary filename mention as proof of image usage.
+    $document = str_replace(['\/', '\u002f', '\u002F'], '/', $document);
+    $document = html_entity_decode($document, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $names = [];
+    $pattern = <<<'REGEX'
+~images/uploads/(?:static/|thumbnails/)?([^/?#&"'<>\\\x00-\x1F]+?\.(?:jpe?g|png|gif|webp))(?=$|[/?#&"'<>\\\s])~iu
+REGEX;
+    for ($pass = 0; $pass < 3; $pass++) {
+      $matches = [];
+      preg_match_all($pattern, $document, $matches);
+      foreach ($matches[1] ?? [] as $name) {
+        $names[$name] = TRUE;
+      }
+      $decoded = rawurldecode($document);
+      if ($decoded === $document) {
+        break;
+      }
+      $document = $decoded;
+    }
+    return array_keys($names);
   }
 }
