@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.1.6-beta7 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.1.7-beta8 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -78,11 +78,11 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 
 ## Smarty template not found
 
-If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.1.6-beta7 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.1.7-beta8 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
 
 ## Recovery from Smarty 5 fatal error in beta3
 
-Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.1.6-beta7 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
+Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.1.7-beta8 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
 
 If the site is already inaccessible, temporarily restore the extension's previous main PHP file from the commit before `d1dc4c76` with `git show d1dc4c76^:mosaicogallery.php > mosaicogallery.php`, then run `git pull --ff-only origin main` **only after restoring the file to Git's tracked state** (using `git restore mosaicogallery.php` after updating the remote reference, or using a temporary file). The safe alternative is to clone a fresh extension copy after moving the old folder outside the extensions directory. Do not uninstall the CiviCRM extension or delete any image files.
 
@@ -99,3 +99,9 @@ WordPress may reject a CiviCRM API URL containing `wp-admin/admin.php?page=1` wi
 ## WordPress 403 on a separate gallery API route (beta7)
 
 The image-manager JavaScript now sends its JSON requests to the same URL that successfully served the gallery page, adding `mg_ajax=1` and `action=...`. The gallery page forwards such requests to the existing permission-checked JSON handler before rendering Smarty content. This avoids the separate WordPress admin-page route that was generating a 403 on some installations. The JSON API still requires `administer CiviCRM`; POST operations still require the per-session CSRF token. No files are moved or deleted.
+
+## WordPress gallery HTTP 403: reserved `page` query parameter (beta8)
+
+Root cause: WordPress uses `admin.php?page=CiviCRM` to decide which admin screen to authorize. Previous versions of the gallery sent `page=1` to request the first page of images, overwriting the WordPress admin router's `page=CiviCRM`. WordPress rejected the request with 403 before CiviCRM ran. This occurred even after the AJAX request had been moved onto the working gallery URL.
+
+The fix sends the gallery's pagination parameter as `mg_page` and reads `mg_page` server-side. WordPress's `page=CiviCRM` is now preserved. Regression test: `node tests/pagination-route.js`. The request should look like `wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery&mg_ajax=1&action=list&mg_page=1` (query order may vary).
