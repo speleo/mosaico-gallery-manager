@@ -44,9 +44,16 @@ class CRM_Core_DAO {
       self::$images[$p[1][0]] = self::$images[$p[1][0]] ?? NULL;
       return new FakeRows([]);
     }
-    if (str_contains($sql, 'SELECT body_html AS document FROM civicrm_mailing')) {
+    if (str_contains($sql, 'FROM civicrm_mailing')) {
+      if (!str_contains($sql, 'template_options')) {
+        throw new RuntimeException('Mailing editable template_options must be scanned as well as rendered HTML.');
+      }
       return new FakeRows([
-        ['document' => '<img src="https://example.org/images/uploads/logo.png"><img src="/images/uploads/logo.png">']
+        ['document' => '<img src="https://example.org/images/uploads/logo.png"><img src="/images/uploads/logo.png">'],
+        // Mosaico editable mailing content persisted under template_options.
+        ['document' => '{"mosaicoContent":"{\\"src\\":\\"https:\\/\\/example.org\\/images\\/uploads\\/annual%20photo.jpg\\"}"}'],
+        // A/B designs are a single CiviMail record: only one usage per file.
+        ['document' => '{"mosaicoContent":{"a":"https://example.org/images/uploads/logo.png","b":"https://example.org/images/uploads/logo.png"}}'],
       ]);
     }
     if (str_contains($sql, 'SELECT CONCAT_WS') && str_contains($sql, 'civicrm_mosaico_template')) {
@@ -76,11 +83,11 @@ require_once dirname(__DIR__) . '/CRM/Mosaicogallery/Util.php';
 function ok($condition, $message) {
   if (!$condition) {throw new RuntimeException($message);}
 }
-$expected = ['logo.png' => 2, 'annual photo.jpg' => 1, 'rénunion.jpg' => 1, 'never-used.gif' => 0];
+$expected = ['logo.png' => 3, 'annual photo.jpg' => 2, 'rénunion.jpg' => 1, 'never-used.gif' => 0];
 $result = CRM_Mosaicogallery_Util::refreshUsage();
 ksort(CRM_Core_DAO::$images);
 ksort($expected);
-ok($result['sources'] === 4, 'four saved records should be scanned');
+ok($result['sources'] === 6, 'six saved records should be scanned');
 ok(CRM_Core_DAO::$images === $expected, 'usage counts must match actual references, including genuine zero. Got: ' . var_export(CRM_Core_DAO::$images, TRUE) . ' expected: ' . var_export($expected, TRUE));
 ok(count(array_unique(CRM_Core_DAO::$scanned)) === 1 &&
   current(CRM_Core_DAO::$scanned) === CRM_Mosaicogallery_Util::USAGE_INDEX_VERSION, 'version persisted');
