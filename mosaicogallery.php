@@ -35,6 +35,25 @@ CREATE TABLE IF NOT EXISTS `civicrm_mosaicogallery_image` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 SQL
   );
+  CRM_Mosaicogallery_Groups::createTables();
+}
+
+/**
+ * Install group tables for existing installs when their administrator applies
+ * pending CiviCRM extension database upgrades.
+ */
+function mosaicogallery_civicrm_upgrade($op, $queue = NULL) {
+  $missing = !CRM_Mosaicogallery_Groups::available();
+  if ($op === 'check') {
+    return [$missing];
+  }
+  if ($op === 'enqueue' && $missing && $queue !== NULL) {
+    $queue->createItem(new CRM_Queue_Task(
+      ['CRM_Mosaicogallery_Groups', 'upgrade'],
+      [],
+      'Create Mosaico Gallery image group tables'
+    ));
+  }
 }
 
 function mosaicogallery_civicrm_uninstall() {
