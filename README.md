@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.1.4-beta5 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.1.5-beta6 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -78,11 +78,11 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 
 ## Smarty template not found
 
-If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.1.4-beta5 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.1.5-beta6 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
 
 ## Recovery from Smarty 5 fatal error in beta3
 
-Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.1.4-beta5 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
+Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.1.5-beta6 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
 
 If the site is already inaccessible, temporarily restore the extension's previous main PHP file from the commit before `d1dc4c76` with `git show d1dc4c76^:mosaicogallery.php > mosaicogallery.php`, then run `git pull --ff-only origin main` **only after restoring the file to Git's tracked state** (using `git restore mosaicogallery.php` after updating the remote reference, or using a temporary file). The safe alternative is to clone a fresh extension copy after moving the old folder outside the extensions directory. Do not uninstall the CiviCRM extension or delete any image files.
 
@@ -91,3 +91,7 @@ If the site is already inaccessible, temporarily restore the extension's previou
 The API URL is inserted into an HTML attribute and already receives HTML escaping from Smarty. Earlier beta versions supplied an HTML-escaped URL from `CRM_Utils_System::url()`, causing double escaping on WordPress (the URL could contain `amp;q=` instead of `q=`). The latest release requests a **raw** URL using `htmlize=FALSE` and forces WP admin routing for the manager API and editor script URL.
 
 If the browser still reports a non-JSON response, inspect the HTTP code, content type, and any redirection shown in the error. An HTML login page indicates the browser was redirected; a 404 or 403 likely points to a routing or permissions problem. Check the browser's Network tab for the `civicrm/mosaicogallery/api` request. The tool deliberately does not copy server HTML into the error message because it can contain private data.
+
+## WordPress admin 403: page=1
+
+WordPress may reject a CiviCRM API URL containing `wp-admin/admin.php?page=1` with `Sorry, you are not allowed to access this page`. The manager now constructs the API request using the working WordPress admin entry point, using `page=CiviCRM` where the generated URL incorrectly returned `page=1`. On update, clear browser cache or force reload the page. Verify in Network that the API request is to `admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery%2Fapi`.
