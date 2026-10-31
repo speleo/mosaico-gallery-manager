@@ -5,7 +5,7 @@
     if (!root) { return; }
     var api = root.getAttribute('data-api');
     var token = root.getAttribute('data-token');
-    var state = { page: 1, filter: 'active', group: 'all', sort: 'recent', search: '', busy: false, groups: [], selected: new Set(), ready: false };
+    var state = { page: 1, filter: 'active', group: 'all', sort: 'recent', search: '', busy: false, groups: [], selected: new Set(), visibleNames: [], bulkGroup: '__choose__', ready: false };
     var grid = document.getElementById('mg-grid');
     var pages = document.getElementById('mg-pagination');
     var summary = document.getElementById('mg-summary');
@@ -80,23 +80,34 @@
       var counter = document.getElementById('mg-bulk-count');
       var apply = document.getElementById('mg-bulk-apply');
       var allBox = document.getElementById('mg-select-all');
-      if (counter) { counter.textContent = selected + ' selected'; }
-      if (apply) { apply.disabled = !selected || state.busy || !state.ready; }
+      var clear = document.getElementById('mg-clear-selection');
+      var selectedHere = state.visibleNames.filter(function (name) { return state.selected.has(name); }).length;
+      if (counter) { counter.textContent = selected + ' photo' + (selected === 1 ? '' : 's') + ' selected'; }
+      if (apply) { apply.disabled = !selected || state.busy || !state.ready || state.bulkGroup === '__choose__'; }
+      if (clear) { clear.disabled = !selected || state.busy; }
       if (allBox) {
-        var choices = document.querySelectorAll ? document.querySelectorAll('#mg-grid input.mg-select-image') : [];
-        allBox.checked = !!choices.length && selected === choices.length;
+        allBox.checked = !!state.visibleNames.length && selectedHere === state.visibleNames.length;
+        allBox.indeterminate = selectedHere > 0 && selectedHere < state.visibleNames.length;
+        allBox.disabled = !state.visibleNames.length || state.busy;
       }
     }
 
     function renderGroups() {
       var all = [{ value: 'all', label: 'All groups' }, { value: 'ungrouped', label: 'Ungrouped' }];
-      var assignable = [{ value: '', label: 'Ungrouped' }];
+      var assignable = [
+        { value: '__choose__', label: 'Choose group…' },
+        { value: '', label: 'Ungrouped' }
+      ];
       state.groups.forEach(function (group) {
         all.push({ value: String(group.id), label: group.title });
         assignable.push({ value: String(group.id), label: group.title });
       });
       groupSelect(document.getElementById('mg-group-filter'), all, state.group);
-      groupSelect(document.getElementById('mg-bulk-group'), assignable, '');
+      if (state.bulkGroup !== '' && state.bulkGroup !== '__choose__' &&
+          !state.groups.some(function (g) { return String(g.id) === state.bulkGroup; })) {
+        state.bulkGroup = '__choose__';
+      }
+      groupSelect(document.getElementById('mg-bulk-group'), assignable, state.bulkGroup);
       var count = document.getElementById('mg-group-count');
       if (count) { count.textContent = state.groups.length + ' of 10 groups'; }
       var buttonCreate = document.getElementById('mg-create-group');
@@ -141,27 +152,53 @@
     }
 
     async function moveImages(names, groupId) {
-      if (state.busy || !names.length) { return; }
+      if (state.busy || !names.length || groupId === '__choose__') { return; }
       state.busy = true;
+      var completed = 0;
+      var unique = Array.from(new Set(names));
       try {
-        await request('assign_group', {filenames: JSON.stringify(names), group_id: groupId}, 'POST');
-        state.selected.clear();
-        message(names.length + ' image(s) assigned. Image files and URLs were not changed.');
+        // The API limits each operation to 100 filenames to keep requests safe.
+        for (var i = 0; i < unique.length; i += 100) {
+          var batch = unique.slice(i, i + 100);
+          await request('assign_group', {filenames: JSON.stringify(batch), group_id: groupId}, 'POST');
+          batch.forEach(function (name) { state.selected.delete(name); });
+          completed += batch.length;
+        }
+        message(completed + ' photos assigned. Files and existing email links are unchanged.');
       }
-      catch (e) { message(e.message, true); }
+      catch (e) {
+        message((completed ? completed + ' photos assigned before an error. ' : '') + e.message, true);
+      }
       finally { state.busy = false; load(); }
+    }
+
+    function setSelected(name, selected) {
+      if (selected) { state.selected.add(name); }
+      else { state.selected.delete(name); }
+      if (document.querySelectorAll) {
+        document.querySelectorAll('#mg-grid .mg-card').forEach(function (card) {
+          if (card.getAttribute('data-name') !== name) { return; }
+          var checked = state.selected.has(name);
+          card.classList.toggle('mg-selected', checked);
+          var box = card.querySelector('input.mg-select-image');
+          if (box) { box.checked = checked; }
+          var imageButton = card.querySelector('.mg-picture-select');
+          if (imageButton) { imageButton.setAttribute('aria-pressed', checked ? 'true' : 'false'); }
+        });
+      }
+      refreshBulk();
     }
 
     async function load() {
       if (state.busy) { return; }
       state.busy = true;
       grid.setAttribute('aria-busy', 'true');
-      state.selected.clear();
       grid.replaceChildren(node('p', 'mg-loading', 'Loading images…'));
       try {
         var data = await request('list', {
           filter: state.filter, group: state.group, sort: state.sort, search: state.search, mg_page: String(state.page)
         });
+        state.visibleNames = data.items.map(function (item) { return item.name; });
         state.groups = data.groups || [];
         state.ready = !!data.group_schema_ready;
         renderGroups();
@@ -175,8 +212,17 @@
         grid.replaceChildren();
         if (!data.items.length) { grid.appendChild(node('p', 'mg-empty', 'No images match these filters.')); }
         data.items.forEach(function (item) {
-          var card = node('article', 'mg-card' + (item.archived ? ' mg-archived' : ''));
-          var picture = node('div', 'mg-picture');
+          var card = node('article', 'mg-card' +
+            (item.archived ? ' mg-archived' : '') +
+            (state.selected.has(item.name) ? ' mg-selected' : ''));
+          card.setAttribute('data-name', item.name);
+          var picture = node('button', 'mg-picture mg-picture-select');
+          picture.type = 'button';
+          picture.setAttribute('aria-label', 'Select image ' + item.name);
+          picture.setAttribute('aria-pressed', state.selected.has(item.name) ? 'true' : 'false');
+          picture.addEventListener('click', function () {
+            setSelected(item.name, !state.selected.has(item.name));
+          });
           var img = node('img');
           img.src = item.url;
           img.alt = item.name;
@@ -195,10 +241,9 @@
           check.className = 'mg-select-image';
           check.setAttribute('aria-label', 'Select ' + item.name);
           check.setAttribute('data-name', item.name);
+          check.checked = state.selected.has(item.name);
           check.addEventListener('change', function () {
-            if (check.checked) { state.selected.add(item.name); }
-            else { state.selected.delete(item.name); }
-            refreshBulk();
+            setSelected(item.name, check.checked);
           });
           groupRow.appendChild(check);
           var select = node('select');
@@ -276,18 +321,30 @@
     var all = document.getElementById('mg-select-all');
     if (all) {
       all.addEventListener('change', function () {
-        document.querySelectorAll('#mg-grid input.mg-select-image').forEach(function (checkbox) {
-          checkbox.checked = all.checked;
-          if (checkbox.checked) { state.selected.add(checkbox.getAttribute('data-name')); }
-          else { state.selected.delete(checkbox.getAttribute('data-name')); }
+        var checked = all.checked;
+        state.visibleNames.forEach(function (name) {
+          setSelected(name, checked);
         });
+        refreshBulk();
+      });
+    }
+    var clear = document.getElementById('mg-clear-selection');
+    if (clear) {
+      clear.addEventListener('click', function () {
+        Array.from(state.selected).forEach(function (name) { setSelected(name, false); });
+      });
+    }
+    var bulkGroup = document.getElementById('mg-bulk-group');
+    if (bulkGroup) {
+      bulkGroup.addEventListener('change', function () {
+        state.bulkGroup = this.value;
         refreshBulk();
       });
     }
     var bulk = document.getElementById('mg-bulk-apply');
     if (bulk) {
       bulk.addEventListener('click', function () {
-        moveImages(Array.from(state.selected), document.getElementById('mg-bulk-group').value);
+        moveImages(Array.from(state.selected), state.bulkGroup);
       });
     }
     document.getElementById('mg-filter').addEventListener('change', function () { state.filter = this.value; state.page = 1; load(); });
