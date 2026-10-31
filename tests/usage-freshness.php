@@ -39,25 +39,25 @@ verify(CRM_Core_DAO::$queries === 0, 'empty directory avoids query');
 
 verify(CRM_Mosaicogallery_Util::usageIndexDue($files), 'new files require initial indexing');
 CRM_Core_DAO::$rows = [
-  ['filename' => 'photo.jpg', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 2],
-  ['filename' => 'logo.png', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 2],
+  ['filename' => 'photo.jpg', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 3],
+  ['filename' => 'logo.png', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 3],
 ];
 verify(!CRM_Mosaicogallery_Util::usageIndexDue($files), 'old-but-valid saved counts reused indefinitely');
 
 CRM_Core_DAO::$rows[1]['usage_index_version'] = 1;
 verify(CRM_Mosaicogallery_Util::usageIndexDue($files), 'previous algorithm version forces recount once');
-CRM_Core_DAO::$rows[1]['usage_index_version'] = 2;
+CRM_Core_DAO::$rows[1]['usage_index_version'] = 3;
 CRM_Core_DAO::$rows[1]['last_indexed'] = NULL;
 verify(CRM_Mosaicogallery_Util::usageIndexDue($files), 'unindexed image forces refresh');
 
 CRM_Core_DAO::$rows = [
-  ['filename' => 'photo.jpg', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 2],
+  ['filename' => 'photo.jpg', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 3],
 ];
 verify(CRM_Mosaicogallery_Util::usageIndexDue($files), 'new upload without index row triggers refresh');
 
 CRM_Core_DAO::$rows = [
-  ['filename' => 'photo.jpg', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 2],
-  ['filename' => 'logo.png', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 2],
+  ['filename' => 'photo.jpg', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 3],
+  ['filename' => 'logo.png', 'last_indexed' => '2026-01-01 12:00:00', 'usage_index_version' => 3],
   ['filename' => 'deleted.jpg', 'last_indexed' => NULL, 'usage_index_version' => 0],
 ];
 verify(!CRM_Mosaicogallery_Util::usageIndexDue($files), 'missing files do not cause endless rescan');
