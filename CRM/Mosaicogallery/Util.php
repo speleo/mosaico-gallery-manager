@@ -90,11 +90,15 @@ class CRM_Mosaicogallery_Util {
     $allCount = count($files);
     $activeCount = 0;
     $archivedCount = 0;
+    $groupCounts = [];
     $matched = [];
     foreach ($files as $name => $file) {
       $row = $meta[$name] ?? ['archived' => FALSE, 'favourite' => FALSE, 'usage_count' => 0];
       $file += $row;
       $file['group_id'] = (int) ($file['group_id'] ?? 0);
+      if ($file['group_id']) {
+        $groupCounts[$file['group_id']] = ($groupCounts[$file['group_id']] ?? 0) + 1;
+      }
       $file['date'] = gmdate('Y-m-d H:i', $file['mtime']) . ' UTC';
       $file['archived'] ? $archivedCount++ : $activeCount++;
       if ($filter === 'active' && $file['archived']) { continue; }
@@ -105,6 +109,10 @@ class CRM_Mosaicogallery_Util {
       if ($search !== '' && stripos($name, $search) === FALSE) { continue; }
       $matched[] = $file;
     }
+    foreach ($groups as &$group) {
+      $group['count'] = $groupCounts[$group['id']] ?? 0;
+    }
+    unset($group);
     usort($matched, static function ($a, $b) use ($sort) {
       if ($sort === 'popular') {
         $v = $b['usage_count'] <=> $a['usage_count'];
