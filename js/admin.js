@@ -360,12 +360,15 @@
       runAction('sync', function (result) { return 'Scanned ' + result.total + ' images; found ' + result.added + ' new images.'; });
     });
     document.getElementById('mg-usage').addEventListener('click', function () {
-      runAction('usage', function (result) { return 'Counted ' + result.sources + ' stored mailings/templates across ' + result.images + ' images.'; });
+      runAction('usage', function (result) { return 'Checked ' + result.sources +
+        ' saved records across ' + result.images + ' images; ' +
+        result.matched_images + ' images have references, ' +
+        result.unmatched_images + ' have none in the indexed records.'; });
     });
     // Usage counts default to zero until they have been indexed. Check once
     // when opening the manager, then perform the first listing only after
-    // any required refresh has completed. Cached counts remain immediately
-    // available on visits during the next 24 hours.
+    // any required refresh has completed. Persisted counts are reused until
+    // a new file appears, the algorithm changes, or the user refreshes.
     async function initializeWithUsageCounts() {
       state.busy = true;
       var usageButton = document.getElementById('mg-usage');
@@ -377,8 +380,10 @@
         if (status.needs_refresh) {
           grid.replaceChildren(node('p', 'mg-loading', 'Counting image references in saved mailings and templates…'));
           message('Updating image usage statistics…');
-          await request('usage', {}, 'POST');
-          message('');
+          var summary = await request('usage', {}, 'POST');
+          message('Usage indexed: ' + summary.matched_images + ' of ' +
+            summary.images + ' images matched saved records. ' +
+            summary.unmatched_images + ' had no matches.');
         }
       } catch (e) {
         // Never prevent image/group management if the reference scan fails.
