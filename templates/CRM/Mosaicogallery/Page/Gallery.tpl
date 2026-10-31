@@ -45,12 +45,22 @@
     <label class="mg-search-label">Search filename <input type="search" id="mg-search" placeholder="e.g. AGM, header, logo"></label>
   </div>
 
-  <div class="mg-bulk">
-    <label><input type="checkbox" id="mg-select-all"> Select images on this page</label>
-    <span id="mg-bulk-count">0 selected</span>
-    <label for="mg-bulk-group">Move selected to</label>
-    <select id="mg-bulk-group"><option value="">Ungrouped</option></select>
-    <button type="button" id="mg-bulk-apply" class="mg-button" disabled>Apply group</button>
+  <div class="mg-bulk" role="group" aria-label="Select and group images">
+    <div class="mg-bulk-top">
+      <strong>Bulk image grouping</strong>
+      <span id="mg-bulk-count" aria-live="polite">0 photos selected</span>
+    </div>
+    <div class="mg-bulk-controls">
+      <label class="mg-bulk-select-all"><input type="checkbox" id="mg-select-all"> Select all on this page</label>
+      <button type="button" id="mg-clear-selection" class="mg-button">Clear selection</button>
+      <label for="mg-bulk-group">Assign selected photos to</label>
+      <select id="mg-bulk-group">
+        <option value="__choose__">Choose group…</option>
+        <option value="">Ungrouped</option>
+      </select>
+      <button type="button" id="mg-bulk-apply" class="mg-button mg-button-primary" disabled>Assign selected</button>
+    </div>
+    <p class="mg-bulk-hint">Click thumbnails or tick their boxes to select several photos. Selection is retained when changing pages or filters.</p>
   </div>
   <div id="mg-grid" class="mg-grid" aria-live="polite"></div>
   <nav id="mg-pagination" class="mg-pagination" aria-label="Gallery pages"></nav>
