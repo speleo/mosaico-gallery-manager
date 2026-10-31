@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `civicrm_mosaicogallery_image` (
   `favourite` TINYINT(1) NOT NULL DEFAULT 0,
   `usage_count` INT UNSIGNED NOT NULL DEFAULT 0,
   `last_indexed` DATETIME NULL,
+  `usage_index_version` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (`filename`),
   KEY `archived_favourite` (`archived`, `favourite`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -43,16 +44,24 @@ SQL
  * pending CiviCRM extension database upgrades.
  */
 function mosaicogallery_civicrm_upgrade($op, $queue = NULL) {
-  $missing = !CRM_Mosaicogallery_Groups::available();
+  $missingGroups = !CRM_Mosaicogallery_Groups::available();
+  $missingUsageVersion = CRM_Mosaicogallery_UsageUpgrade::needed();
   if ($op === 'check') {
-    return [$missing];
+    return [$missingGroups || $missingUsageVersion];
   }
-  if ($op === 'enqueue' && $missing && $queue !== NULL) {
-    $queue->createItem(new CRM_Queue_Task(
-      ['CRM_Mosaicogallery_Groups', 'upgrade'],
-      [],
-      'Create Mosaico Gallery image group tables'
-    ));
+  if ($op === 'enqueue' && $queue !== NULL) {
+    if ($missingGroups) {
+      $queue->createItem(new CRM_Queue_Task(
+        ['CRM_Mosaicogallery_Groups', 'upgrade'], [],
+        'Create Mosaico Gallery image group tables'
+      ));
+    }
+    if ($missingUsageVersion) {
+      $queue->createItem(new CRM_Queue_Task(
+        ['CRM_Mosaicogallery_UsageUpgrade', 'upgrade'], [],
+        'Add persistent image usage index version'
+      ));
+    }
   }
 }
 
