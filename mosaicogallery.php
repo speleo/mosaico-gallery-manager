@@ -11,29 +11,9 @@ function mosaicogallery_civicrm_config(&$config) {
   }
   $configured = TRUE;
 
-  // CiviCRM's class autoloader needs PHP classes in the include path.
+  // Class autoloading only. Never inspect or alter Smarty in this global
+  // configuration hook: a failure here can disable the entire WordPress admin.
   set_include_path(__DIR__ . PATH_SEPARATOR . get_include_path());
-
-  // Smarty uses a *separate* template search path. Without this registration,
-  // CRM_Core_Page cannot load CRM/Mosaicogallery/Page/Gallery.tpl.
-  // Use the public Smarty API on CiviCRM/Smarty 5 and fall back for older sites.
-  $templateDir = __DIR__ . '/templates';
-  $smarty = CRM_Core_Smarty::singleton();
-  if (method_exists($smarty, 'getTemplateDir') && method_exists($smarty, 'addTemplateDir')) {
-    $dirs = array_map(static function ($dir) {
-      return rtrim((string) $dir, '/\\');
-    }, (array) $smarty->getTemplateDir());
-    if (!in_array(rtrim($templateDir, '/\\'), $dirs, TRUE)) {
-      $smarty->addTemplateDir($templateDir);
-    }
-  }
-  else {
-    $dirs = (array) $smarty->template_dir;
-    if (!in_array($templateDir, $dirs, TRUE)) {
-      array_unshift($dirs, $templateDir);
-      $smarty->template_dir = $dirs;
-    }
-  }
 }
 
 function mosaicogallery_civicrm_xmlMenu(&$files) {
