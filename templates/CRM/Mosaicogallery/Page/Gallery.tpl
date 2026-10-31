@@ -19,7 +19,7 @@
     <p>Create up to 10 groups with your own headings. Renaming or removing a group never changes or deletes image files.</p>
     <div class="mg-group-create">
       <label for="mg-new-group">New group heading</label>
-      <input type="text" id="mg-new-group" maxlength="80" placeholder="e.g. Club logos, Events, Caving photos">
+      <input type="text" id="mg-new-group" maxlength="80" placeholder="e.g. Logos, Events, News">
       <button id="mg-create-group" type="button" class="mg-button">Add group</button>
     </div>
     <div id="mg-group-list" class="mg-group-list"></div>
