@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.2.6-beta7 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.2.7-beta8 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -78,11 +78,11 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 
 ## Smarty template not found
 
-If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.6-beta7 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.7-beta8 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
 
 ## Recovery from Smarty 5 fatal error in beta3
 
-Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.6-beta7 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
+Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.7-beta8 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
 
 If the site is already inaccessible, temporarily restore the extension's previous main PHP file from the commit before `d1dc4c76` with `git show d1dc4c76^:mosaicogallery.php > mosaicogallery.php`, then run `git pull --ff-only origin main` **only after restoring the file to Git's tracked state** (using `git restore mosaicogallery.php` after updating the remote reference, or using a temporary file). The safe alternative is to clone a fresh extension copy after moving the old folder outside the extensions directory. Do not uninstall the CiviCRM extension or delete any image files.
 
@@ -106,7 +106,7 @@ Root cause: WordPress uses `admin.php?page=CiviCRM` to decide which admin screen
 
 The fix sends the gallery's pagination parameter as `mg_page` and reads `mg_page` server-side. WordPress's `page=CiviCRM` is now preserved. Regression test: `node tests/pagination-route.js`. The request should look like `wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery&mg_ajax=1&action=list&mg_page=1` (query order may vary).
 
-## Image groups (0.2.6-beta7)
+## Image groups (0.2.7-beta8)
 
 - Create **up to ten** groups with your own headings (1–80 Unicode characters).
 - Rename or remove groups. Removing a group puts its images back into **Ungrouped**; files, thumbnails, historical email HTML and URLs are unchanged.
@@ -142,7 +142,7 @@ node tests/preview-editor-filter.js
 
 Test on a staging clone first. Existing archived images remain archived, and changing or deleting groups never deletes or relocates images.
 
-## Gallery integration and multi-select improvements (0.2.6-beta7)
+## Gallery integration and multi-select improvements (0.2.7-beta8)
 
 The lower-right floating Mosaico toolbar is removed. Its custom **Group** and **Sort by** selectors now appear directly in Mosaico's existing **Gallery** pane, above the native image list. Changes re-filter/re-sort the live gallery immediately using Mosaico's documented plugin hook (`hook_civicrm_mosaicoPlugin`) and Knockout gallery model, without editing or replacing Mosaico core files. Stock gallery upload behavior, image drag/drop and thumbnail selection remain native.
 
@@ -150,7 +150,7 @@ The management page now makes **Bulk image grouping** prominent above the thumbn
 
 No database change is required when updating from `0.2.0-beta1`, only `git pull --ff-only` and a browser refresh. The previous database migration is still required if upgrading from an older version. Test in a draft mailing before using in production.
 
-## Compact embedded image-gallery filters (0.2.6-beta7)
+## Compact embedded image-gallery filters (0.2.7-beta8)
 
 The inline Gallery filter panel has been reduced to a slim, single-row control with a **Group** dropdown, **Sort by** dropdown, and discreet **Manage** link. The separate "Find images" header, image count and footer were removed, labels now sit close to the selectors, and padding/margins were tightened.
 
@@ -158,13 +158,13 @@ The inline Gallery filter panel has been reduced to a slim, single-row control w
 
 Updating from 0.2.1-beta2 requires only `git pull --ff-only origin main`, a CiviCRM cache flush, and a hard reload of the Mosaico editor. No new database upgrade is required.
 
-## Gallery management settings cog (0.2.6-beta7)
+## Gallery management settings cog (0.2.7-beta8)
 
 The compact Mosaico Gallery panel now shows a **settings cog (⚙)** immediately to the right of the **Sort by** dropdown. It replaces the dim "Manage" text that previously sat beside the caption. The cog is shown only to CiviCRM administrators, opens the Gallery Manager in a new tab, and includes an accessible label and hover tooltip. The group and sort selectors, image dimensions, live filtering and image management features are otherwise unchanged.
 
 Update with `git pull --ff-only origin main`, clear the CiviCRM cache and open a fresh Mosaico editor session or hard reload. No database upgrade is needed.
 
-## Automatic image usage counts on opening (0.2.6-beta7)
+## Automatic image usage counts on opening (0.2.7-beta8)
 
 The extension's Gallery Manager page no longer repeats its title below the CiviCRM page heading.
 
@@ -174,7 +174,7 @@ If all current images have been indexed within the last 24 hours, the saved coun
 
 The read-only freshness check does not alter records; the existing POST action performs all writes after successful scans. No new tables or migration are needed.
 
-## Reference counting and persistent cache correction (0.2.6-beta7)
+## Reference counting and persistent cache correction (0.2.7-beta8)
 
 **Why some images incorrectly showed zero:** The previous implementation scanned `civicrm_mosaico_template.html` and `metadata` but **omitted `content`**, which is where Mosaico keeps its editable image references. It also overlooked `civicrm_msg_template.msg_html` and some filenames containing spaces, non-ASCII characters or doubly URL-encoded paths. It counted no reference in those cases even when the image was used. The new scanner checks all these forms, counts **each saved record at most once per image**, and retains a true zero when no stored reference is found. The display now says "No saved references found" rather than suggesting every zero means an image was definitely never used.
 
@@ -196,7 +196,7 @@ A zero after the corrected, successful scan means no matching image URLs were fo
 
 CI exercises `php tests/usage-scan.php` (including realistic escaped/double-encoded URLs) and `php tests/usage-freshness.php` (persistent cache and version invalidation).
 
-## Fix for missing CiviMail/Mosaico saved references (0.2.6-beta7)
+## Fix for missing CiviMail/Mosaico saved references (0.2.7-beta8)
 
 **Root cause:** Individual CiviMail mailing records save their Mosaico editable design JSON in `civicrm_mailing.template_options`, frequently under `mosaicoContent` (and potentially multiple A/B variants). Earlier usage indexing only inspected `civicrm_mailing.body_html`, which can omit images that still appear in a saved editable design. The scanner now searches **both fields within the same saved mailing record**, deduplicating filenames per record. It continues to scan `civicrm_mosaico_template.html/metadata/content` and `civicrm_msg_template.msg_html`.
 
@@ -220,3 +220,25 @@ GitHub Actions validates PHP syntax, JavaScript syntax, and the image manager's 
 Individual code, test, or documentation commits pushed directly to `main` **do not automatically trigger this workflow** unless they also change `info.xml`. Therefore, **make functional changes on a feature branch and open a pull request**; merge only once its checks pass. Keep the version bump as the final commit when releasing directly to main. Superseded in-progress checks are cancelled to avoid redundant notifications. Genuine failures on pull requests or release commits continue to report errors normally. The workflow is not disabled and existing tests have not been weakened.
 
 The numerous failure emails from 31 October 2026 were for intermediate commits while tests and new classes were being added one at a time. The latest complete main commit was green before this workflow change. The historic notification emails cannot be recalled by editing GitHub Actions.
+
+## Database persistence and image-count consistency fix (0.2.7-beta8)
+
+**Symptom:** A completed scan could say "190 of 196 images have references" while many thumbnail cards still said "No saved references found".
+
+**Cause:** `metadata()` creates placeholder metadata for images assigned to gallery groups even when the `civicrm_mosaicogallery_image` usage-index table has **no actual row** for the image. `syncInventory()` incorrectly used those placeholders to decide whether a usage-index row existed. The scanner then used `UPDATE ... WHERE filename = ...`; SQL accepts an UPDATE matching zero rows, so the scan completed and its **in-memory** counts were reported as successful, while the gallery read zeros from absent rows.
+
+**Fix:** `syncInventory()` now checks genuine rows in the usage-index table rather than merged group metadata. Saving usage counts uses `INSERT ... ON DUPLICATE KEY UPDATE`, creating a missing usage row when necessary without modifying group assignments or an existing row's archived/favourite flags. Finally, the scan **reads every count back from the database**, checks it against the computed result and returns the *persisted* matched/unmatched totals. If a write is silently ignored, the request explicitly fails rather than displaying an inaccurate success message.
+
+The indexing version is now **4**. Opening Gallery Manager after pulling this update automatically recalculates and saves all counts **once**, using the already-installed usage-index-version column, then reuses persisted values on future visits. **No additional database schema migration is necessary** if the v0.2.5-beta6 upgrade was applied. This does not move or delete any images, delete saved mailings, or change group assignments.
+
+**Read-only SQL diagnostic (optional):** To see if existing group assignments lack a matching usage-index row:
+
+```sql
+SELECT g.filename, g.group_id
+FROM civicrm_mosaicogallery_image_group g
+LEFT JOIN civicrm_mosaicogallery_image i ON i.filename = g.filename
+WHERE i.filename IS NULL
+LIMIT 25;
+```
+
+After a successful recount, these images should have their own usage-index rows. The scan's reported count and the gallery thumbnails will then come from the same persisted source. This is covered by the integration test `php tests/usage-scan.php`, which deliberately starts with a grouped image missing from the usage-index table and verifies that it is created and correctly displayed; it also simulates a silent SQL failure to ensure it cannot report false success.
