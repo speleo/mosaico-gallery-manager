@@ -111,16 +111,37 @@
     vm.galleryRemote(selected);
     if (typeof vm.galleryLoaded === 'function') { vm.galleryLoaded(selected.length); }
     if (typeof vm.galleryRemote.moveFirst === 'function') { vm.galleryRemote.moveFirst(); }
-    var count = document.getElementById('mg-gallery-count');
-    if (count) { count.textContent = selected.length + ' images'; }
   }
 
-  function makeSelect(labelText, value, values, changed) {
+  function makeSelect(labelText, value, values, changed, manageUrl) {
+    // Compact controls: a single-line caption (with optional manage link)
+    // immediately above a native-size select. No additional heading/footer.
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'display:flex;flex-direction:column;gap:1px;flex:1 1 0;min-width:0;text-align:left;';
+    var caption = document.createElement('div');
+    caption.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:12px;line-height:12px;';
     var label = document.createElement('label');
-    label.style.cssText = 'display:flex;flex-direction:column;gap:3px;flex:1;min-width:100px;font-size:12px;';
-    label.appendChild(document.createTextNode(labelText));
+    var id = labelText === 'Group' ? 'mg-editor-group' : 'mg-editor-sort';
+    label.setAttribute('for', id);
+    label.textContent = labelText;
+    label.style.cssText = 'font:11px/12px Arial,sans-serif;';
+    caption.appendChild(label);
+
+    if (manageUrl) {
+      var link = document.createElement('a');
+      link.href = manageUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Manage';
+      link.style.cssText = 'font:10px/12px Arial,sans-serif;white-space:nowrap;';
+      link.setAttribute('aria-label', 'Manage gallery images');
+      caption.appendChild(link);
+    }
+    wrapper.appendChild(caption);
+
     var select = document.createElement('select');
-    select.style.cssText = 'width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:5px;border:1px solid #a9b8c3;border-radius:5px;background:#fff;color:#263747;font-size:13px;';
+    select.id = id;
+    select.style.cssText = 'width:100%;height:27px;min-height:27px;min-width:0;max-width:100%;box-sizing:border-box;margin:0;padding:2px 4px;border:1px solid #a9b8c3;border-radius:4px;background:#fff;color:#263747;font:12px Arial,sans-serif;';
     select.setAttribute('aria-label', labelText);
     values.forEach(function (entry) {
       var option = document.createElement('option');
@@ -130,8 +151,8 @@
     });
     select.value = value;
     select.addEventListener('change', function () { changed(select.value); });
-    label.appendChild(select);
-    return label;
+    wrapper.appendChild(select);
+    return wrapper;
   }
 
   function mountGalleryControls() {
@@ -152,15 +173,10 @@
     bar.id = 'mg-gallery-filters';
     bar.setAttribute('role', 'group');
     bar.setAttribute('aria-label', 'Filter image gallery');
-    bar.style.cssText = 'position:relative;display:block;text-align:left;box-sizing:border-box;padding:10px;margin:7px 0 12px;background:#f5f8fa;border:1px solid #d6e0e7;border-radius:7px;color:#273a4b;font:13px Arial,sans-serif;';
-
-    var heading = document.createElement('div');
-    heading.textContent = 'Find images';
-    heading.style.cssText = 'font-weight:bold;margin-bottom:7px;';
-    bar.appendChild(heading);
+    bar.style.cssText = 'position:relative;display:block;text-align:left;box-sizing:border-box;padding:5px 6px;margin:3px 0 5px;background:#f5f8fa;border:1px solid #d6e0e7;border-radius:6px;color:#273a4b;';
 
     var row = document.createElement('div');
-    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:7px;';
+    row.style.cssText = 'display:flex;flex-wrap:nowrap;gap:6px;align-items:end;';
     row.appendChild(makeSelect('Group', currentGroup, [
       ['all', 'All groups'], ['ungrouped', 'Ungrouped']
     ].concat((config.groups || []).map(function (group) {
@@ -177,24 +193,8 @@
       currentOrder = value;
       try { localStorage.setItem('mosaicogallery-order', value); } catch (ignore) {}
       applyNow();
-    }));
+    }, config.canManage ? config.managerUrl : null));
     bar.appendChild(row);
-
-    var footer = document.createElement('div');
-    footer.style.cssText = 'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-top:8px;font-size:11px;color:#526879;';
-    var count = document.createElement('span');
-    count.id = 'mg-gallery-count';
-    count.textContent = fullFiles ? visibleFiles(fullFiles).length + ' images' : 'Gallery filters';
-    footer.appendChild(count);
-    if (config.canManage && config.managerUrl) {
-      var link = document.createElement('a');
-      link.href = config.managerUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = 'Manage images';
-      footer.appendChild(link);
-    }
-    bar.appendChild(footer);
     target.insertBefore(bar, target.firstChild);
     // For a gallery that was loaded while this UI was mounting, apply the
     // current selection without another request.
