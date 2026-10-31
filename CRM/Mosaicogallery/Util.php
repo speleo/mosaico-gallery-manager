@@ -49,6 +49,11 @@ class CRM_Mosaicogallery_Util {
         'usage_count' => (int) $dao->usage_count,
       ];
     }
+    foreach (CRM_Mosaicogallery_Groups::assignments() as $name => $groupId) {
+      if (isset($rows[$name])) {
+        $rows[$name]['group_id'] = $groupId;
+      }
+    }
     return $rows;
   }
 
@@ -69,9 +74,18 @@ class CRM_Mosaicogallery_Util {
     return ['added' => $added, 'total' => count($files)];
   }
 
-  public static function listing($filter, $sort, $search, $page = 1, $limit = 60) {
+  public static function listing($filter, $sort, $search, $page = 1, $limit = 60, $groupFilter = 'all') {
     $files = self::files();
     $meta = self::metadata();
+    $groups = CRM_Mosaicogallery_Groups::all();
+    $validGroupIds = array_column($groups, 'id');
+    if ($groupFilter !== 'all' && $groupFilter !== 'ungrouped') {
+      $groupId = ctype_digit((string) $groupFilter) ? (int) $groupFilter : 0;
+      if (!$groupId || !in_array($groupId, $validGroupIds, TRUE)) {
+        throw new InvalidArgumentException('Unknown image group filter.');
+      }
+      $groupFilter = (string) $groupId;
+    }
     $allCount = count($files);
     $activeCount = 0;
     $archivedCount = 0;
@@ -79,11 +93,14 @@ class CRM_Mosaicogallery_Util {
     foreach ($files as $name => $file) {
       $row = $meta[$name] ?? ['archived' => FALSE, 'favourite' => FALSE, 'usage_count' => 0];
       $file += $row;
+      $file['group_id'] = (int) ($file['group_id'] ?? 0);
       $file['date'] = gmdate('Y-m-d H:i', $file['mtime']) . ' UTC';
       $file['archived'] ? $archivedCount++ : $activeCount++;
       if ($filter === 'active' && $file['archived']) { continue; }
       if ($filter === 'archived' && !$file['archived']) { continue; }
       if ($filter === 'favourites' && !$file['favourite']) { continue; }
+      if ($groupFilter === 'ungrouped' && $file['group_id'] !== 0) { continue; }
+      if ($groupFilter !== 'all' && $groupFilter !== 'ungrouped' && $file['group_id'] !== (int) $groupFilter) { continue; }
       if ($search !== '' && stripos($name, $search) === FALSE) { continue; }
       $matched[] = $file;
     }
@@ -106,6 +123,8 @@ class CRM_Mosaicogallery_Util {
     $limit = max(1, min(100, (int) $limit));
     return [
       'items' => array_slice($matched, ($page - 1) * $limit, $limit),
+      'groups' => $groups,
+      'group_schema_ready' => CRM_Mosaicogallery_Groups::available(),
       'total' => $count,
       'active' => $activeCount,
       'archived' => $archivedCount,
