@@ -36,6 +36,7 @@ class CRM_Core_DAO {
   public static array $scanned = [];
   public static int $updated = 0;
   public static bool $breakTemplate = FALSE;
+  public static bool $silentNoop = FALSE;
   public static array $archived = ['logo.png' => 1];
   public static array $favourite = ['logo.png' => 1];
   public static function executeQuery($sql, $p = []) {
@@ -86,6 +87,10 @@ class CRM_Core_DAO {
     if (str_starts_with($sql, 'INSERT INTO civicrm_mosaicogallery_image ') &&
         str_contains($sql, 'ON DUPLICATE KEY UPDATE')) {
       $name = $p[1][0];
+      if (self::$silentNoop && $name === 'logo.png') {
+        // Database accepted a statement but silently wrote no row.
+        return new FakeRows([]);
+      }
       self::$images[$name] = $p[2][0];
       self::$scanned[$name] = $p[3][0];
       self::$updated++;
@@ -118,6 +123,20 @@ ok($visible['annual photo.jpg']['group_id'] === 1,
 ok($visible['logo.png']['archived'] && $visible['logo.png']['favourite'],
   'usage recount must preserve archive/favourite flags');
 $previous = CRM_Core_DAO::$images;
+// The old implementation reported success from memory even when SQL UPDATE
+// changed zero rows. Verify the persisted data before reporting success.
+CRM_Core_DAO::$images['logo.png'] = 0;
+CRM_Core_DAO::$silentNoop = TRUE;
+try {
+  CRM_Mosaicogallery_Util::refreshUsage();
+  throw new RuntimeException('Expected failure for silently ignored usage write');
+}
+catch (RuntimeException $e) {
+  ok(str_contains($e->getMessage(), 'verification failed'),
+    'silent persistence failures must be reported instead of claiming counts');
+}
+CRM_Core_DAO::$silentNoop = FALSE;
+CRM_Core_DAO::$images = $previous;
 CRM_Core_DAO::$updated = 0;
 CRM_Core_DAO::$breakTemplate = TRUE;
 try {
