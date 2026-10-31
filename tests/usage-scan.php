@@ -21,6 +21,8 @@ class CRM_Mosaicogallery_Groups {
   // Assigned image has NO corresponding inventory row at test start.
   // The old syncInventory wrongly treated this as an existing usage row.
   public static function assignments() {return ['annual photo.jpg' => 1];}
+  public static function available() {return TRUE;}
+  public static function all() {return [['id' => 1, 'title' => 'Events']];}
 }
 class FakeRows {
   private array $rows;
@@ -125,6 +127,15 @@ ok($visible['annual photo.jpg']['group_id'] === 1,
   'repairing usage counts must preserve group assignment');
 ok($visible['logo.png']['archived'] && $visible['logo.png']['favourite'],
   'usage recount must preserve archive/favourite flags');
+$gallery = CRM_Mosaicogallery_Util::listing('all', 'recent', '', 1, 60);
+$shownReferenced = count(array_filter($gallery['items'], static function ($image) {
+  return $image['usage_count'] > 0;
+}));
+ok($shownReferenced === $result['matched_images'],
+  'scan summary must agree with gallery card counts');
+ok(count($gallery['items']) - $shownReferenced === $result['unmatched_images'],
+  'the gallery must show exactly the unmatched image count reported');
+
 $previous = CRM_Core_DAO::$images;
 // The old implementation reported success from memory even when SQL UPDATE
 // changed zero rows. Verify the persisted data before reporting success.
