@@ -19,9 +19,9 @@ class Element {
     this.className = '';
     this.checked = false;
     this.classList = {
-      contains: name => this.className.split(/\\s+/).includes(name),
+      contains: name => this.className.split(/\s+/).includes(name),
       toggle: (name, enabled) => {
-        const classes = new Set(this.className.split(/\\s+/).filter(Boolean));
+        const classes = new Set(this.className.split(/\s+/).filter(Boolean));
         if (enabled) {classes.add(name);} else {classes.delete(name);}
         this.className = Array.from(classes).join(' ');
       },
