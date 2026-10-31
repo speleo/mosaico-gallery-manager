@@ -5,7 +5,7 @@
     if (!root) { return; }
     var api = root.getAttribute('data-api');
     var token = root.getAttribute('data-token');
-    var state = { page: 1, filter: 'active', sort: 'recent', search: '', busy: false };
+    var state = { page: 1, filter: 'active', group: 'all', sort: 'recent', search: '', busy: false, groups: [], selected: new Set(), ready: false };
     var grid = document.getElementById('mg-grid');
     var pages = document.getElementById('mg-pagination');
     var summary = document.getElementById('mg-summary');
@@ -63,15 +63,107 @@
       if (!response.ok || !json || !json.ok) { throw new Error((json && json.error) || 'Gallery API request failed (HTTP ' + response.status + ').'); }
       return json.data;
     }
+
+    function groupSelect(select, options, desiredValue) {
+      if (!select) { return; }
+      select.replaceChildren();
+      options.forEach(function (option) {
+        var item = node('option', '', option.label);
+        item.value = option.value;
+        select.appendChild(item);
+      });
+      select.value = desiredValue;
+    }
+
+    function refreshBulk() {
+      var selected = state.selected.size;
+      var counter = document.getElementById('mg-bulk-count');
+      var apply = document.getElementById('mg-bulk-apply');
+      var allBox = document.getElementById('mg-select-all');
+      if (counter) { counter.textContent = selected + ' selected'; }
+      if (apply) { apply.disabled = !selected || state.busy || !state.ready; }
+      if (allBox) {
+        var choices = document.querySelectorAll ? document.querySelectorAll('#mg-grid input.mg-select-image') : [];
+        allBox.checked = !!choices.length && selected === choices.length;
+      }
+    }
+
+    function renderGroups() {
+      var all = [{ value: 'all', label: 'All groups' }, { value: 'ungrouped', label: 'Ungrouped' }];
+      var assignable = [{ value: '', label: 'Ungrouped' }];
+      state.groups.forEach(function (group) {
+        all.push({ value: String(group.id), label: group.title });
+        assignable.push({ value: String(group.id), label: group.title });
+      });
+      groupSelect(document.getElementById('mg-group-filter'), all, state.group);
+      groupSelect(document.getElementById('mg-bulk-group'), assignable, '');
+      var count = document.getElementById('mg-group-count');
+      if (count) { count.textContent = state.groups.length + ' of 10 groups'; }
+      var buttonCreate = document.getElementById('mg-create-group');
+      var inputCreate = document.getElementById('mg-new-group');
+      if (buttonCreate) { buttonCreate.disabled = state.groups.length >= 10 || !state.ready; }
+      if (inputCreate) { inputCreate.disabled = state.groups.length >= 10 || !state.ready; }
+      var holder = document.getElementById('mg-group-list');
+      if (!holder) { return; }
+      holder.replaceChildren();
+      state.groups.forEach(function (group) {
+        var item = node('div', 'mg-group-item');
+        item.appendChild(node('strong', '', group.title));
+        item.appendChild(button('Rename', function () {
+          var title = window.prompt('New heading for this group:', group.title);
+          if (title !== null && title.trim()) {
+            mutateGroup('rename_group', {group_id: String(group.id), title: title.trim()}, 'Group renamed.');
+          }
+        }));
+        item.appendChild(button('Remove', function () {
+          if (window.confirm('Remove the group "' + group.title + '"? Images will become Ungrouped, but none will be deleted.')) {
+            if (state.group === String(group.id)) { state.group = 'all'; }
+            mutateGroup('delete_group', {group_id: String(group.id)}, 'Group removed. Images were not deleted.');
+          }
+        }));
+        holder.appendChild(item);
+      });
+      if (!state.ready) {
+        holder.appendChild(node('p', 'mg-error', 'Group database upgrade pending. Run cv ext:upgrade-db or apply pending CiviCRM extension upgrades.'));
+      }
+    }
+
+    async function mutateGroup(action, payload, success) {
+      if (state.busy) { return; }
+      state.busy = true;
+      try {
+        await request(action, payload, 'POST');
+        message(success);
+      }
+      catch (e) { message(e.message, true); }
+      finally { state.busy = false; load(); }
+    }
+
+    async function moveImages(names, groupId) {
+      if (state.busy || !names.length) { return; }
+      state.busy = true;
+      try {
+        await request('assign_group', {filenames: JSON.stringify(names), group_id: groupId}, 'POST');
+        state.selected.clear();
+        message(names.length + ' image(s) assigned. Image files and URLs were not changed.');
+      }
+      catch (e) { message(e.message, true); }
+      finally { state.busy = false; load(); }
+    }
+
     async function load() {
       if (state.busy) { return; }
       state.busy = true;
       grid.setAttribute('aria-busy', 'true');
+      state.selected.clear();
       grid.replaceChildren(node('p', 'mg-loading', 'Loading images…'));
       try {
         var data = await request('list', {
-          filter: state.filter, sort: state.sort, search: state.search, mg_page: String(state.page)
+          filter: state.filter, group: state.group, sort: state.sort, search: state.search, mg_page: String(state.page)
         });
+        state.groups = data.groups || [];
+        state.ready = !!data.group_schema_ready;
+        renderGroups();
         summary.replaceChildren();
         [['Total images', data.all], ['Active', data.active], ['Archived', data.archived], ['Matching', data.total]].forEach(function (pair) {
           var tile = node('div', 'mg-stat');
@@ -96,6 +188,27 @@
           info.appendChild(filename);
           info.appendChild(node('div', 'mg-detail', 'Used in ' + item.usage_count + ' saved records'));
           info.appendChild(node('div', 'mg-detail', item.date));
+          var groupRow = node('div', 'mg-assignment');
+          var check = node('input');
+          check.type = 'checkbox';
+          check.className = 'mg-select-image';
+          check.setAttribute('aria-label', 'Select ' + item.name);
+          check.setAttribute('data-name', item.name);
+          check.addEventListener('change', function () {
+            if (check.checked) { state.selected.add(item.name); }
+            else { state.selected.delete(item.name); }
+            refreshBulk();
+          });
+          groupRow.appendChild(check);
+          var select = node('select');
+          select.setAttribute('aria-label', 'Group for ' + item.name);
+          var choices = [{value: '', label: 'Ungrouped'}];
+          state.groups.forEach(function (group) { choices.push({value: String(group.id), label: group.title}); });
+          groupSelect(select, choices, item.group_id ? String(item.group_id) : '');
+          select.disabled = !state.ready;
+          select.addEventListener('change', function () { moveImages([item.name], select.value); });
+          groupRow.appendChild(select);
+          info.appendChild(groupRow);
           var actions = node('div', 'mg-actions');
           var fav = button(item.favourite ? '★ Favourite' : '☆ Favourite', function () {
             change(item, 'favourite', !item.favourite);
@@ -110,6 +223,7 @@
           card.appendChild(info);
           grid.appendChild(card);
         });
+        refreshBulk();
         pages.replaceChildren();
         var prev = button('← Previous', function () { state.page--; load(); });
         prev.disabled = data.page <= 1;
@@ -124,6 +238,7 @@
       } finally {
         state.busy = false;
         grid.removeAttribute('aria-busy');
+        refreshBulk();
       }
     }
     async function change(item, flag, enabled) {
@@ -144,6 +259,35 @@
         message(success(result));
       } catch (e) { message(e.message, true); }
       finally { state.busy = false; load(); }
+    }
+    var groupFilter = document.getElementById('mg-group-filter');
+    if (groupFilter) { groupFilter.addEventListener('change', function () { state.group = this.value; state.page = 1; load(); }); }
+    var create = document.getElementById('mg-create-group');
+    if (create) {
+      create.addEventListener('click', function () {
+        var titleInput = document.getElementById('mg-new-group');
+        var title = titleInput.value.trim();
+        if (!title) { message('Enter a group heading first.', true); return; }
+        mutateGroup('create_group', {title: title}, 'Group created.');
+        titleInput.value = '';
+      });
+    }
+    var all = document.getElementById('mg-select-all');
+    if (all) {
+      all.addEventListener('change', function () {
+        document.querySelectorAll('#mg-grid input.mg-select-image').forEach(function (checkbox) {
+          checkbox.checked = all.checked;
+          if (checkbox.checked) { state.selected.add(checkbox.getAttribute('data-name')); }
+          else { state.selected.delete(checkbox.getAttribute('data-name')); }
+        });
+        refreshBulk();
+      });
+    }
+    var bulk = document.getElementById('mg-bulk-apply');
+    if (bulk) {
+      bulk.addEventListener('click', function () {
+        moveImages(Array.from(state.selected), document.getElementById('mg-bulk-group').value);
+      });
     }
     document.getElementById('mg-filter').addEventListener('change', function () { state.filter = this.value; state.page = 1; load(); });
     document.getElementById('mg-sort').addEventListener('change', function () { state.sort = this.value; state.page = 1; load(); });
