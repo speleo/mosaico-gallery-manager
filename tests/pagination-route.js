@@ -30,7 +30,8 @@ const ids = new Map();
 for (const id of ['mosaicogallery-app', 'mg-grid', 'mg-pagination', 'mg-summary',
   'mg-status', 'mg-filter', 'mg-sort', 'mg-search', 'mg-sync', 'mg-usage',
   'mg-group-filter', 'mg-group-count', 'mg-create-group', 'mg-new-group', 'mg-group-list',
-  'mg-bulk-group', 'mg-bulk-count', 'mg-bulk-apply', 'mg-select-all']) {
+  'mg-bulk-group', 'mg-bulk-count', 'mg-bulk-apply', 'mg-select-all',
+  'mg-clear-selection']) {
   ids.set(id, new Element('div'));
 }
 const root = ids.get('mosaicogallery-app');
@@ -66,7 +67,7 @@ const context = {
       status: 200,
       headers: {get: () => 'application/json'},
       text: async () => JSON.stringify({ok: true, data: {
-        items: [{name: 'test.jpg', url: '/images/uploads/test.jpg', usage_count: 2,
+        items: [{name: page === 2 ? 'test2.jpg' : 'test.jpg', url: '/images/uploads/test.jpg', usage_count: 2,
           date: '2026-10-31', archived: false, favourite: false, group_id: 0}],
         active: 120, archived: 0, all: 120, total: 120, page, pages: 2,
         groups: [{id: 1, title: 'Club logos', count: 1}], group_schema_ready: true,
@@ -79,6 +80,9 @@ function settle() { return new Promise(resolve => setTimeout(resolve, 5)); }
 (async () => {
   await settle();
   assert.equal(requests.length, 1);
+  // Click a thumbnail to select without changing its group.
+  ids.get('mg-grid').children[0].children[0].events.click();
+  assert.equal(ids.get('mg-bulk-count').textContent, '1 photo selected');
   assert.equal(requests[0].searchParams.get('page'), 'CiviCRM');
   assert.equal(requests[0].searchParams.get('mg_page'), '1');
   assert.equal(requests[0].searchParams.get('q'), 'civicrm/mosaicogallery');
@@ -91,13 +95,27 @@ function settle() { return new Promise(resolve => setTimeout(resolve, 5)); }
   assert.equal(requests[1].searchParams.get('page'), 'CiviCRM');
   assert.equal(requests[1].searchParams.get('mg_page'), '2');
   assert.equal(requests[1].searchParams.getAll('page').length, 1);
+  assert.equal(ids.get('mg-bulk-count').textContent, '1 photo selected',
+    'selection persists on pagination');
+  ids.get('mg-grid').children[0].children[0].events.click();
+  assert.equal(ids.get('mg-bulk-count').textContent, '2 photos selected');
+  const groupPicker = ids.get('mg-bulk-group');
+  groupPicker.value = '1';
+  groupPicker.events.change.call(groupPicker);
+  ids.get('mg-bulk-apply').events.click();
+  await settle();
+  assert.equal(posted.length, 1, 'one bulk assignment for two selected photos');
+  assert.equal(posted[0].get('group_id'), '1');
+  assert.deepEqual(JSON.parse(posted[0].get('filenames')), ['test.jpg', 'test2.jpg']);
+  assert.equal(ids.get('mg-bulk-count').textContent, '0 photos selected');
   const filter = ids.get('mg-group-filter');
   filter.value = '1';
   filter.events.change.call(filter);
   await settle();
-  assert.equal(requests[2].searchParams.get('page'), 'CiviCRM');
-  assert.equal(requests[2].searchParams.get('group'), '1');
-  assert.equal(requests[2].searchParams.get('mg_page'), '1');
+  const filtered = requests[requests.length - 1];
+  assert.equal(filtered.searchParams.get('page'), 'CiviCRM');
+  assert.equal(filtered.searchParams.get('group'), '1');
+  assert.equal(filtered.searchParams.get('mg_page'), '1');
 
   const card = ids.get('mg-grid').children[0];
   const groupRow = card.children[1].children[3];
@@ -105,9 +123,9 @@ function settle() { return new Promise(resolve => setTimeout(resolve, 5)); }
   select.value = '1';
   select.events.change.call(select);
   await settle();
-  assert.equal(posted.length, 1, 'one group assignment request');
-  assert.equal(posted[0].get('group_id'), '1');
-  assert.equal(posted[0].get('filenames'), JSON.stringify(['test.jpg']));
-  assert.equal(requests[3].searchParams.get('page'), 'CiviCRM');
+  assert.equal(posted.length, 2, 'bulk plus individual group assignment');
+  assert.equal(posted[1].get('group_id'), '1');
+  assert.equal(posted[1].get('filenames'), JSON.stringify(['test.jpg']));
+  assert.equal(requests[requests.length - 1].searchParams.get('page'), 'CiviCRM');
   console.log('WordPress routing and gallery pagination collision checks passed.');
 })().catch(err => { console.error(err); process.exit(1); });
