@@ -55,3 +55,42 @@
   #mosaicogallery-app .mg-group-create input { min-width:0; width:100%; }
   #mosaicogallery-app .mg-bulk { gap:8px; }
 }
+
+
+/* Bulk image grouping — selections persist across gallery pages. */
+#mosaicogallery-app .mg-bulk {
+  position:sticky; top:0; z-index:5; display:block;
+  padding:12px 16px; margin:8px 0 16px;
+  background:#f4f8fb; border:1px solid #c7d8e4; border-radius:9px;
+  box-shadow:0 2px 6px #00000012;
+}
+#mosaicogallery-app .mg-bulk-top,
+#mosaicogallery-app .mg-bulk-controls {
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+}
+#mosaicogallery-app .mg-bulk-top { margin-bottom:9px; justify-content:space-between; }
+#mosaicogallery-app .mg-bulk-top strong { font-size:15px; color:#224861; }
+#mosaicogallery-app .mg-bulk-count { font-weight:bold; }
+#mosaicogallery-app .mg-bulk-select-all { white-space:nowrap; }
+#mosaicogallery-app .mg-bulk-hint { margin:8px 0 0; font-size:12px; color:#556e7d; }
+#mosaicogallery-app .mg-bulk-controls label { font-weight:600; }
+#mosaicogallery-app .mg-bulk-controls select { min-width:165px; max-width:260px; }
+#mosaicogallery-app .mg-button-primary { background:#12648a; color:white; border-color:#12648a; font-weight:600; }
+#mosaicogallery-app .mg-button-primary:hover { background:#0d5172; color:white; }
+#mosaicogallery-app .mg-card.mg-selected { border:2px solid #1380a9; box-shadow:0 0 0 2px #a4d7ea; }
+#mosaicogallery-app .mg-picture-select {
+  appearance:none; -webkit-appearance:none; width:100%; padding:0;
+  margin:0; border:0; border-radius:0; cursor:pointer;
+}
+#mosaicogallery-app .mg-picture-select:hover { background:#e3f1f7; }
+#mosaicogallery-app .mg-picture-select:focus-visible { outline:3px solid #1380a9; outline-offset:-3px; }
+#mosaicogallery-app .mg-selected .mg-picture-select::after {
+  content:"✓ Selected"; position:absolute; right:7px; top:7px;
+  font-size:12px; font-weight:bold; color:#fff; background:#12648a;
+  border-radius:5px; padding:4px 7px; pointer-events:none;
+}
+#mosaicogallery-app .mg-picture-select { position:relative; }
+@media(max-width:700px) {
+  #mosaicogallery-app .mg-bulk { position:relative; padding:11px; }
+  #mosaicogallery-app .mg-bulk-controls select { flex:1; max-width:none; }
+}
