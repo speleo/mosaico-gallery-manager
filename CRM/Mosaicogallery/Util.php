@@ -50,9 +50,10 @@ class CRM_Mosaicogallery_Util {
       ];
     }
     foreach (CRM_Mosaicogallery_Groups::assignments() as $name => $groupId) {
-      if (isset($rows[$name])) {
-        $rows[$name]['group_id'] = $groupId;
+      if (!isset($rows[$name])) {
+        $rows[$name] = ['archived' => FALSE, 'favourite' => FALSE, 'usage_count' => 0];
       }
+      $rows[$name]['group_id'] = $groupId;
     }
     return $rows;
   }
