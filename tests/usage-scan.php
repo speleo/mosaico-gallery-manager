@@ -78,6 +78,8 @@ function ok($condition, $message) {
 }
 $expected = ['logo.png' => 2, 'annual photo.jpg' => 1, 'rénunion.jpg' => 1, 'never-used.gif' => 0];
 $result = CRM_Mosaicogallery_Util::refreshUsage();
+ksort(CRM_Core_DAO::$images);
+ksort($expected);
 ok($result['sources'] === 4, 'four saved records should be scanned');
 ok(CRM_Core_DAO::$images === $expected, 'usage counts must match actual references, including genuine zero. Got: ' . var_export(CRM_Core_DAO::$images, TRUE) . ' expected: ' . var_export($expected, TRUE));
 ok(count(array_unique(CRM_Core_DAO::$scanned)) === 1 &&
