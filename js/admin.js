@@ -70,7 +70,7 @@
       grid.replaceChildren(node('p', 'mg-loading', 'Loading images…'));
       try {
         var data = await request('list', {
-          filter: state.filter, sort: state.sort, search: state.search, page: String(state.page)
+          filter: state.filter, sort: state.sort, search: state.search, mg_page: String(state.page)
         });
         summary.replaceChildren();
         [['Total images', data.all], ['Active', data.active], ['Archived', data.archived], ['Matching', data.total]].forEach(function (pair) {
