@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension key="org.bec.mosaicogallery" type="module">
+  <file>mosaicogallery</file>
+  <name>Mosaico Gallery Manager</name>
+  <description>Manage Mosaico image listings without moving or deleting historic mailing images.</description>
+  <license>AGPL-3.0-or-later</license>
+  <maintainer><author>BEC</author></maintainer>
+  <releaseDate>2026-10-31</releaseDate>
+  <version>0.1.0-beta1</version>
+  <develStage>beta</develStage>
+  <compatibility><ver>5.70</ver></compatibility>
+  <requires><ext>uk.co.vedaconsulting.mosaico</ext></requires>
+  <comments>Requires Mosaico. Tested by static analysis only; verify in staging before production.</comments>
+</extension>

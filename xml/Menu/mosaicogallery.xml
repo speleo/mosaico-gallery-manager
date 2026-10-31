@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menu>
+  <item>
+    <path>civicrm/mosaicogallery</path>
+    <page_callback>CRM_Mosaicogallery_Page_Gallery</page_callback>
+    <title>Mosaico Gallery Manager</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/mosaicogallery/api</path>
+    <page_callback>CRM_Mosaicogallery_Page_Api</page_callback>
+    <title>Mosaico Gallery API</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/mosaicogallery/editorjs</path>
+    <page_callback>CRM_Mosaicogallery_Page_Editorjs</page_callback>
+    <title>Mosaico Gallery Editor Script</title>
+    <access_arguments>access CiviMail</access_arguments>
+  </item>
+</menu>
