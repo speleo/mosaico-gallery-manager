@@ -106,6 +106,9 @@ function ok($condition, $message) {
 $expected = ['logo.png' => 3, 'annual photo.jpg' => 2, 'rénunion.jpg' => 1, 'never-used.gif' => 0];
 ok(!isset(CRM_Core_DAO::$images['annual photo.jpg']),
   'a grouped image begins without an inventory row');
+$initial = CRM_Mosaicogallery_Util::syncInventory();
+ok($initial['added'] === 3 && array_key_exists('annual photo.jpg', CRM_Core_DAO::$images),
+  'inventory must add grouped images with missing real database rows');
 $result = CRM_Mosaicogallery_Util::refreshUsage();
 ksort(CRM_Core_DAO::$images);
 ksort($expected);
