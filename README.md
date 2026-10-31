@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.2.0-beta1 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.2.1-beta2 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -11,7 +11,7 @@ Manage the existing CiviCRM Mosaico image directory without deleting, renaming, 
 - One-click archive/restore and favourite/unfavourite — **database flags only**.
 - Reference-index refresh counts distinct stored `civicrm_mailing` HTML and `civicrm_mosaico_template` HTML/metadata references. It does not count individual email recipients, opens, or clicks.
 - The editor integration uses Mosaico's documented `hook_civicrm_mosaicoScriptUrlsAlter` and a jQuery AJAX **response filter**, applying archive flags and chosen sort to the GET image list. It leaves upload POSTs, image renderers, and existing mailing HTML unmodified.
-- In the editor, choose gallery order from the small floating control; reopen the gallery to see the new order. Admins can launch the management page in a new tab.
+- In the Mosaico editor, choose group and sort order from controls **inside the Gallery tab**, directly above images; changing either refreshes the gallery's live thumbnails and pager immediately. Admins can open the management page in a new tab.
 - Existing sent emails and template images continue to use their original URLs.
 
 ## Requirements
@@ -37,7 +37,7 @@ If CiviCRM's menu cache does not recognize a new route after enablement, run **A
 - **Zero file deletion.** No delete feature; disabling or uninstalling the extension also leaves files untouched. Database metadata is retained on uninstall.
 - Existing emails retain links, including references to archived images.
 - Archiving affects the editor's **GET gallery response**, not the image URL. Some Mosaico/WordPress gallery integrations replace the native gallery or use `fetch()` instead of jQuery; those may require an adapter and **will not be filtered** by this beta. Do not install the third-party WordPress media gallery swap alongside this beta without testing.
-- The editor order control only affects the next gallery load (reopen gallery). Cached tabs need reloading after archive changes.
+- Editor group/order controls update the existing Knockout gallery immediately; creating or renaming groups and changing archive flags in another tab still requires reopening/reloading the editor to receive updated metadata.
 - Usage counts cover saved mailings and Mosaico templates in the local CiviCRM DB, not external emails or deleted records. Template references may be counted separately from a mailing created from the template.
 - File date is filesystem modification time (may change during restores or migrations), not a guaranteed upload timestamp.
 - Paths are taken from `CRM_Mosaico_Utils::getConfig()`; there is no hardcoded uploads directory.
@@ -78,11 +78,11 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 
 ## Smarty template not found
 
-If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.0-beta1 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.1-beta2 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
 
 ## Recovery from Smarty 5 fatal error in beta3
 
-Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.0-beta1 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
+Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.1-beta2 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
 
 If the site is already inaccessible, temporarily restore the extension's previous main PHP file from the commit before `d1dc4c76` with `git show d1dc4c76^:mosaicogallery.php > mosaicogallery.php`, then run `git pull --ff-only origin main` **only after restoring the file to Git's tracked state** (using `git restore mosaicogallery.php` after updating the remote reference, or using a temporary file). The safe alternative is to clone a fresh extension copy after moving the old folder outside the extensions directory. Do not uninstall the CiviCRM extension or delete any image files.
 
@@ -106,13 +106,13 @@ Root cause: WordPress uses `admin.php?page=CiviCRM` to decide which admin screen
 
 The fix sends the gallery's pagination parameter as `mg_page` and reads `mg_page` server-side. WordPress's `page=CiviCRM` is now preserved. Regression test: `node tests/pagination-route.js`. The request should look like `wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery&mg_ajax=1&action=list&mg_page=1` (query order may vary).
 
-## Image groups (0.2.0-beta1)
+## Image groups (0.2.1-beta2)
 
 - Create **up to ten** groups with your own headings (1–80 Unicode characters).
 - Rename or remove groups. Removing a group puts its images back into **Ungrouped**; files, thumbnails, historical email HTML and URLs are unchanged.
 - An image belongs to **one group at a time**, or **Ungrouped**. No virtual folders are created on disk.
 - From the manager, select a group to filter images. Change an image's group from its card, or select several images on the current page and click **Apply group** for bulk assignment.
-- In the Mosaico editor, use **Image group** in the floating toolbar to filter the gallery by any group or Ungrouped; reopen the image library for changes to apply. Archived images remain hidden in every group.
+- In the Mosaico editor, use **Group** and **Sort by** directly in the Gallery tab above thumbnails. Selections update immediately without reopening. Archived images remain hidden in every group.
 - The manager shows the number of images assigned to each group (including archived images still on disk). Group headings are managed by CiviCRM administrators.
 
 ### Important: database upgrade for existing installations
@@ -141,3 +141,11 @@ node tests/preview-editor-filter.js
 ```
 
 Test on a staging clone first. Existing archived images remain archived, and changing or deleting groups never deletes or relocates images.
+
+## Gallery integration and multi-select improvements (0.2.1-beta2)
+
+The lower-right floating Mosaico toolbar is removed. Its custom **Group** and **Sort by** selectors now appear directly in Mosaico's existing **Gallery** pane, above the native image list. Changes re-filter/re-sort the live gallery immediately using Mosaico's documented plugin hook (`hook_civicrm_mosaicoPlugin`) and Knockout gallery model, without editing or replacing Mosaico core files. Stock gallery upload behavior, image drag/drop and thumbnail selection remain native.
+
+The management page now makes **Bulk image grouping** prominent above the thumbnails. Click any thumbnail (or its checkbox), select all images on the current page, and retain selections when paging and filtering. Choose a group and select **Assign selected**; the app sends groups of up to 100 filenames per API request. Choose **Ungrouped** to remove assignments, or **Clear selection** to reset. A selected image has a blue border and badge. You can still assign images individually from each card.
+
+No database change is required when updating from `0.2.0-beta1`, only `git pull --ff-only` and a browser refresh. The previous database migration is still required if upgrading from an older version. Test in a draft mailing before using in production.
