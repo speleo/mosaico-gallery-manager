@@ -66,6 +66,7 @@ root.setAttribute('data-token', 'fake');
 const original = 'https://bec-cave.org.uk/wp/wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery&reset=1';
 const requests = [];
 const posted = [];
+let usageStatusChecks = 0;
 const context = {
   document: {
     readyState: 'complete',
@@ -87,6 +88,13 @@ const context = {
   setTimeout, clearTimeout,
   fetch: async (url, options) => {
     const parsed = new URL(url);
+    if (parsed.searchParams.get('action') === 'usage_status') {
+      usageStatusChecks++;
+      return {
+        ok: true, status: 200, headers: {get: () => 'application/json'},
+        text: async () => JSON.stringify({ok: true, data: {needs_refresh: false}}),
+      };
+    }
     requests.push(parsed);
     if (options.method === 'POST') {
       posted.push(new URLSearchParams(options.body));
@@ -113,6 +121,7 @@ vm.runInNewContext(script, context);
 function settle() { return new Promise(resolve => setTimeout(resolve, 5)); }
 (async () => {
   await settle();
+  assert.equal(usageStatusChecks, 1, 'initial gallery load checks usage freshness once');
   assert.equal(requests.length, 1);
   // Click a thumbnail to select without changing its group.
   ids.get('mg-grid').children[0].children[0].events.click();
