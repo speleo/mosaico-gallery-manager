@@ -79,9 +79,17 @@ function gallery(group) {
   // Mosaico initially reverses the JSON list before assigning galleryRemote.
   liveGallery(initial.slice().reverse());
   window.mosaicogalleryBindViewModel(viewModel);
-  const filterBar = panel.children[0], filterRow = filterBar.children[1];
+  const filterBar = panel.children[0], filterRow = filterBar.children[0];
+  assert.equal(filterBar.children.length, 1, 'compact toolbar has no heading or footer');
+  assert.ok(filterBar.style.cssText.includes('padding:5px 6px'), 'compact padding is used');
+  assert.ok(!source.includes('Find images'), 'old heading has been removed');
+  assert.ok(!source.includes('mg-gallery-count'), 'old count is removed');
+  assert.ok(!source.includes('.draggable'), 'editor extension does not restyle thumbnails');
   const groupSelect = filterRow.children[0].children[1];
   const orderSelect = filterRow.children[1].children[1];
+  assert.equal(orderSelect.style.cssText.includes('height:27px'), true, 'compact selector height');
+  assert.equal(filterRow.children[1].children[0].children[1].textContent, 'Manage',
+    'manager link retained without a separate footer');
   return {
     list: () => Array.from(live, item => item.name),
     initial: initial.map(item => item.name),
