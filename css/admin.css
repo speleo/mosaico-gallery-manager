@@ -33,3 +33,25 @@
 #mosaicogallery-app .mg-note { color:#596570; max-width:900px; font-size:12px; line-height:1.5; }
 #mosaicogallery-app .mg-empty { grid-column:1/-1; }
 @media(max-width:700px) {#mosaicogallery-app .mg-summary { grid-template-columns:repeat(2,1fr); } #mosaicogallery-app .mg-toolbar { width:100%; } #mosaicogallery-app .mg-toolbar button { flex:1; } }
+
+
+#mosaicogallery-app .mg-groups { padding:16px; margin:18px 0; border:1px solid #d9dfe5; border-radius:9px; background:#fff; }
+#mosaicogallery-app .mg-groups-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#mosaicogallery-app .mg-groups h3 { margin:0; font-size:18px; }
+#mosaicogallery-app .mg-groups p { font-size:13px; color:#546678; margin:8px 0 14px; }
+#mosaicogallery-app .mg-group-create { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+#mosaicogallery-app .mg-group-create input { min-width:210px; max-width:400px; flex:1; padding:7px; border:1px solid #cbd5e1; border-radius:6px; }
+#mosaicogallery-app .mg-group-list { display:flex; flex-wrap:wrap; gap:9px; }
+#mosaicogallery-app .mg-group-item { display:flex; align-items:center; flex-wrap:wrap; gap:6px; border:1px solid #cbd5e1; border-radius:8px; padding:7px 9px; background:#f7fafc; }
+#mosaicogallery-app .mg-group-item strong { margin-right:3px; }
+#mosaicogallery-app .mg-bulk { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 0; margin-bottom:10px; border-top:1px solid #e1e6eb; }
+#mosaicogallery-app .mg-bulk select { padding:6px; max-width:230px; }
+#mosaicogallery-app .mg-assignment { display:flex; gap:7px; align-items:center; margin-top:12px; }
+#mosaicogallery-app .mg-assignment select { min-width:0; flex:1; font-size:12px; padding:5px; border-radius:5px; }
+#mosaicogallery-app .mg-assignment input[type="checkbox"] { flex-shrink:0; margin:0; }
+@media(max-width:700px) {
+  #mosaicogallery-app .mg-groups { padding:12px; }
+  #mosaicogallery-app .mg-group-create label { width:100%; }
+  #mosaicogallery-app .mg-group-create input { min-width:0; width:100%; }
+  #mosaicogallery-app .mg-bulk { gap:8px; }
+}
