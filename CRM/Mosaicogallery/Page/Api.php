@@ -30,7 +30,7 @@ class CRM_Mosaicogallery_Page_Api extends CRM_Core_Page {
           $search = isset($_GET['search']) && is_string($_GET['search']) ? trim($_GET['search']) : '';
           if (!in_array($filter, ['active', 'archived', 'all', 'favourites'], TRUE)) { $filter = 'active'; }
           if (!in_array($sort, ['recent', 'popular', 'name', 'favourites'], TRUE)) { $sort = 'recent'; }
-          $out = CRM_Mosaicogallery_Util::listing($filter, $sort, substr($search, 0, 255), (int) ($_GET['page'] ?? 1));
+          $out = CRM_Mosaicogallery_Util::listing($filter, $sort, substr($search, 0, 255), (int) ($_GET['mg_page'] ?? 1));
           break;
         case 'sync':
           if ($method !== 'POST') { throw new InvalidArgumentException('Use POST.'); }
