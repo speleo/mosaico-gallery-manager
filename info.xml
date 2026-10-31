@@ -6,7 +6,7 @@
   <license>AGPL-3.0-or-later</license>
   <maintainer><author>BEC</author></maintainer>
   <releaseDate>2026-10-31</releaseDate>
-  <version>0.2.6-beta7</version>
+  <version>0.2.7-beta8</version>
   <develStage>beta</develStage>
   <compatibility><ver>5.70</ver></compatibility>
   <requires><ext>uk.co.vedaconsulting.mosaico</ext></requires>
