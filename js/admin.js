@@ -109,6 +109,7 @@
       state.groups.forEach(function (group) {
         var item = node('div', 'mg-group-item');
         item.appendChild(node('strong', '', group.title));
+        item.appendChild(node('span', 'mg-group-image-count', '(' + (group.count || 0) + ' images)'));
         item.appendChild(button('Rename', function () {
           var title = window.prompt('New heading for this group:', group.title);
           if (title !== null && title.trim()) {
