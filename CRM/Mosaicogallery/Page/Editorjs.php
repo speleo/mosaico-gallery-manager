@@ -20,7 +20,7 @@ class CRM_Mosaicogallery_Page_Editorjs extends CRM_Core_Page {
     }
     $conf = [
       'entries' => $entries,
-      'managerUrl' => CRM_Utils_System::url('civicrm/mosaicogallery', 'reset=1', TRUE),
+      'managerUrl' => CRM_Utils_System::url('civicrm/mosaicogallery', 'reset=1', TRUE, NULL, FALSE, FALSE, TRUE),
       'canManage' => CRM_Core_Permission::check('administer CiviCRM'),
     ];
     // Quoted and escaped as a JavaScript literal, never executable user input.
