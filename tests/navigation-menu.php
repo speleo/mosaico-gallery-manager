@@ -28,4 +28,9 @@ $withoutMailings = [1 => ['attributes' => ['name' => 'Administer', 'navID' => 1]
 mosaicogallery_civicrm_navigationMenu($withoutMailings);
 check(count($withoutMailings) === 1, 'missing Mailings parent does not inject stray menu');
 
+$plugins = [];
+mosaicogallery_civicrm_mosaicoPlugin($plugins);
+check(count($plugins) === 1, 'Mosaico plugin registered');
+check(str_contains($plugins[0], 'mosaicogalleryBindViewModel'), 'plugin passes editor view model to embedded gallery filters');
+
 echo "Navigation menu regression checks passed.\n";
