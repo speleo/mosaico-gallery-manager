@@ -56,7 +56,7 @@ SQL
 
   private static function checkTitle($title) {
     $title = trim($title);
-    if ($title === '' || strlen($title) > 240 || (function_exists('mb_strlen') && mb_strlen($title) > 80)) {
+    if ($title === '' || !preg_match('//u', $title) || preg_match_all('/./us', $title) > 80) {
       throw new InvalidArgumentException('Enter a group heading of 1–80 characters.');
     }
     if (preg_match('/[\\x00-\\x1F\\x7F]/', $title)) {
@@ -121,6 +121,11 @@ SQL
   public static function rename($groupId, $title) {
     $groupId = self::requireGroup($groupId);
     $title = self::checkTitle($title);
+    foreach (self::all() as $group) {
+      if ($group['id'] !== $groupId && strcasecmp($group['title'], $title) === 0) {
+        throw new InvalidArgumentException('A group already has that heading.');
+      }
+    }
     CRM_Core_DAO::executeQuery(
       'UPDATE civicrm_mosaicogallery_group SET title = %1 WHERE id = %2',
       [1 => [$title, 'String'], 2 => [$groupId, 'Integer']]
