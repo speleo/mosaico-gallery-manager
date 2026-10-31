@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.2.3-beta4 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.2.4-beta5 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -27,7 +27,7 @@ Manage the existing CiviCRM Mosaico image directory without deleting, renaming, 
 2. Expand the ZIP. Upload the enclosed `org.bec.mosaicogallery` folder to CiviCRM's configured **Extensions Directory** (typically `wp-content/uploads/civicrm/ext/`). This is a **CiviCRM extension, not a WordPress plugin**; do not upload it via `Plugins → Add Plugin`.
 3. CiviCRM → **Administer → System Settings → Extensions → Refresh**, find **Mosaico Gallery Manager**, and **Install** (or Enable).
 4. Choose **Mailings → Mosaico Gallery Manager** (if the normal Mailings menu is enabled), or go to the site's CiviCRM base URL and append `/mosaicogallery` (usually `https://example.org/civicrm/mosaicogallery`). Alternatively use CiviCRM routing: `civicrm/mosaicogallery?reset=1`.
-5. Click **Rescan image directory**, then **Refresh usage counts**. For a large archive, the first refresh can take a while; use off-peak time.
+5. Open **Mosaico Gallery Manager**. The gallery now checks and automatically populates missing or outdated usage statistics before displaying thumbnails. The first scan can take a while on large archives; the **Refresh usage counts** button remains available to force a new scan.
 6. Archive an image and open a **new** Mosaico editor session. Verify it is hidden in the image selector and that the image still works in an old mailing. Test Restore too.
 
 If CiviCRM's menu cache does not recognize a new route after enablement, run **Administer → System Settings → Cleanup Caches and Update Paths**.
@@ -78,11 +78,11 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 
 ## Smarty template not found
 
-If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.3-beta4 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.4-beta5 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
 
 ## Recovery from Smarty 5 fatal error in beta3
 
-Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.3-beta4 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
+Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.4-beta5 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
 
 If the site is already inaccessible, temporarily restore the extension's previous main PHP file from the commit before `d1dc4c76` with `git show d1dc4c76^:mosaicogallery.php > mosaicogallery.php`, then run `git pull --ff-only origin main` **only after restoring the file to Git's tracked state** (using `git restore mosaicogallery.php` after updating the remote reference, or using a temporary file). The safe alternative is to clone a fresh extension copy after moving the old folder outside the extensions directory. Do not uninstall the CiviCRM extension or delete any image files.
 
@@ -106,7 +106,7 @@ Root cause: WordPress uses `admin.php?page=CiviCRM` to decide which admin screen
 
 The fix sends the gallery's pagination parameter as `mg_page` and reads `mg_page` server-side. WordPress's `page=CiviCRM` is now preserved. Regression test: `node tests/pagination-route.js`. The request should look like `wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery&mg_ajax=1&action=list&mg_page=1` (query order may vary).
 
-## Image groups (0.2.3-beta4)
+## Image groups (0.2.4-beta5)
 
 - Create **up to ten** groups with your own headings (1–80 Unicode characters).
 - Rename or remove groups. Removing a group puts its images back into **Ungrouped**; files, thumbnails, historical email HTML and URLs are unchanged.
@@ -142,7 +142,7 @@ node tests/preview-editor-filter.js
 
 Test on a staging clone first. Existing archived images remain archived, and changing or deleting groups never deletes or relocates images.
 
-## Gallery integration and multi-select improvements (0.2.3-beta4)
+## Gallery integration and multi-select improvements (0.2.4-beta5)
 
 The lower-right floating Mosaico toolbar is removed. Its custom **Group** and **Sort by** selectors now appear directly in Mosaico's existing **Gallery** pane, above the native image list. Changes re-filter/re-sort the live gallery immediately using Mosaico's documented plugin hook (`hook_civicrm_mosaicoPlugin`) and Knockout gallery model, without editing or replacing Mosaico core files. Stock gallery upload behavior, image drag/drop and thumbnail selection remain native.
 
@@ -150,7 +150,7 @@ The management page now makes **Bulk image grouping** prominent above the thumbn
 
 No database change is required when updating from `0.2.0-beta1`, only `git pull --ff-only` and a browser refresh. The previous database migration is still required if upgrading from an older version. Test in a draft mailing before using in production.
 
-## Compact embedded image-gallery filters (0.2.3-beta4)
+## Compact embedded image-gallery filters (0.2.4-beta5)
 
 The inline Gallery filter panel has been reduced to a slim, single-row control with a **Group** dropdown, **Sort by** dropdown, and discreet **Manage** link. The separate "Find images" header, image count and footer were removed, labels now sit close to the selectors, and padding/margins were tightened.
 
@@ -158,8 +158,18 @@ The inline Gallery filter panel has been reduced to a slim, single-row control w
 
 Updating from 0.2.1-beta2 requires only `git pull --ff-only origin main`, a CiviCRM cache flush, and a hard reload of the Mosaico editor. No new database upgrade is required.
 
-## Gallery management settings cog (0.2.3-beta4)
+## Gallery management settings cog (0.2.4-beta5)
 
 The compact Mosaico Gallery panel now shows a **settings cog (⚙)** immediately to the right of the **Sort by** dropdown. It replaces the dim "Manage" text that previously sat beside the caption. The cog is shown only to CiviCRM administrators, opens the Gallery Manager in a new tab, and includes an accessible label and hover tooltip. The group and sort selectors, image dimensions, live filtering and image management features are otherwise unchanged.
 
 Update with `git pull --ff-only origin main`, clear the CiviCRM cache and open a fresh Mosaico editor session or hard reload. No database upgrade is needed.
+
+## Automatic image usage counts on opening (0.2.4-beta5)
+
+The extension's Gallery Manager page no longer repeats its title below the CiviCRM page heading.
+
+When the page first loads, it checks the database's existing `last_indexed` timestamps for **current image files**. If any current image has never been indexed, was recently uploaded without an index record, or has usage counts older than 24 hours, the browser starts an authenticated, CSRF-protected `POST action=usage` using the existing reference indexer. It waits for this calculation to finish before showing thumbnails, so the initial display and **Most used** sorting use populated counts. This can take longer on the first visit or after a full day; a short loading message is shown.
+
+If all current images have been indexed within the last 24 hours, the saved counts appear directly without rescanning mailings. Orphaned database records for removed images are ignored in the freshness check. A failed automatic refresh displays an error message but still loads the gallery with whatever counts were previously cached. **Refresh usage counts** remains as the manual override.
+
+The read-only freshness check does not alter records; the existing POST action performs all writes after successful scans. No new tables or migration are needed.
