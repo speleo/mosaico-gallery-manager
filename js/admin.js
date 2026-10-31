@@ -360,7 +360,37 @@
     document.getElementById('mg-usage').addEventListener('click', function () {
       runAction('usage', function (result) { return 'Counted ' + result.sources + ' stored mailings/templates across ' + result.images + ' images.'; });
     });
-    load();
+    // Usage counts default to zero until they have been indexed. Check once
+    // when opening the manager, then perform the first listing only after
+    // any required refresh has completed. Cached counts remain immediately
+    // available on visits during the next 24 hours.
+    async function initializeWithUsageCounts() {
+      state.busy = true;
+      var usageButton = document.getElementById('mg-usage');
+      if (usageButton) { usageButton.disabled = true; }
+      grid.setAttribute('aria-busy', 'true');
+      grid.replaceChildren(node('p', 'mg-loading', 'Checking image usage statistics…'));
+      try {
+        var status = await request('usage_status', {}, 'GET');
+        if (status.needs_refresh) {
+          grid.replaceChildren(node('p', 'mg-loading', 'Counting image references in saved mailings and templates…'));
+          message('Updating image usage statistics…');
+          await request('usage', {}, 'POST');
+          message('');
+        }
+      } catch (e) {
+        // Never prevent image/group management if the reference scan fails.
+        // The previous cached counts remain available for inspection.
+        message('Unable to refresh usage counts automatically: ' + e.message +
+          ' Use Refresh usage counts to retry.', true);
+      } finally {
+        if (usageButton) { usageButton.disabled = false; }
+        state.busy = false;
+        grid.removeAttribute('aria-busy');
+        load();
+      }
+    }
+    initializeWithUsageCounts();
   }
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); }
   else { init(); }
