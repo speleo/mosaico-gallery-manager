@@ -75,6 +75,15 @@
     };
   });
 
+  // CiviCRM invokes this through hook_civicrm_mosaicoPlugin as Mosaico
+  // constructs its editor. It works even when Knockout is not on window.
+  window.mosaicogalleryBindViewModel = function (vm) {
+    if (!vm || typeof vm.galleryRemote !== 'function') { return; }
+    galleryVM = vm;
+    scheduleMount();
+    if (fullFiles) { applyNow(); }
+  };
+
   function findViewModel() {
     if (!galleryNode || !window.ko || typeof window.ko.contextFor !== 'function') { return null; }
     try {
