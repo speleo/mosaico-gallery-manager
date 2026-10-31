@@ -31,6 +31,18 @@
     async function request(action, data, method) {
       var body;
       var url = new URL(api, location.href);
+      // WordPress can receive a malformed CiviCRM-generated admin URL
+      // ("page=1"), which WP rejects with 403 before our endpoint runs.
+      // Reuse the CMS routing of the manager page that loaded successfully.
+      var current = new URL(location.href);
+      if (current.pathname.endsWith('/wp-admin/admin.php') &&
+          current.searchParams.has('page') &&
+          current.searchParams.get('page') !== '1') {
+        url = new URL(current.origin + current.pathname);
+        url.searchParams.set('page', current.searchParams.get('page'));
+        url.searchParams.set('q', 'civicrm/mosaicogallery/api');
+        url.searchParams.set('reset', '1');
+      }
       url.searchParams.set('action', action);
       if (method === 'POST') {
         body = new URLSearchParams(Object.assign({ token: token }, data || {}));
