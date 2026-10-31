@@ -1,6 +1,6 @@
 # Mosaico Gallery Manager (CiviCRM / WordPress)
 
-**Version:** 0.1.7-beta8 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
+**Version:** 0.2.0-beta1 — staging release; do not deploy on a production CiviCRM installation without testing against its exact version.
 
 Manage the existing CiviCRM Mosaico image directory without deleting, renaming, or moving images. Works independently of the WordPress Media Library; it manages assets that Mosaico already references.
 
@@ -78,11 +78,11 @@ Disable the extension from the CiviCRM Extensions screen and clear caches. Mosai
 
 ## Smarty template not found
 
-If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.1.7-beta8 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
+If the page reports `Unable to load file:CRM/Mosaicogallery/Page/Gallery.tpl`, update to 0.2.0-beta1 or newer. The extension now registers its own `templates/` folder with CiviCRM Smarty. Run `git pull --ff-only` in the extension folder, then clear CiviCRM caches (`cv flush` if available). Do not copy the template into core CiviCRM directories.
 
 ## Recovery from Smarty 5 fatal error in beta3
 
-Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.1.7-beta8 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
+Version 0.1.2-beta3 could crash the WordPress CiviCRM admin by reading Smarty's protected `template_dir` property from the global configuration hook. Version 0.2.0-beta1 removes that global Smarty access. Template registration now happens only on the gallery page, via public `getTemplateDir()` and `addTemplateDir()` APIs (which CiviCRM's Smarty wrapper forwards through `__call()`).
 
 If the site is already inaccessible, temporarily restore the extension's previous main PHP file from the commit before `d1dc4c76` with `git show d1dc4c76^:mosaicogallery.php > mosaicogallery.php`, then run `git pull --ff-only origin main` **only after restoring the file to Git's tracked state** (using `git restore mosaicogallery.php` after updating the remote reference, or using a temporary file). The safe alternative is to clone a fresh extension copy after moving the old folder outside the extensions directory. Do not uninstall the CiviCRM extension or delete any image files.
 
@@ -105,3 +105,39 @@ The image-manager JavaScript now sends its JSON requests to the same URL that su
 Root cause: WordPress uses `admin.php?page=CiviCRM` to decide which admin screen to authorize. Previous versions of the gallery sent `page=1` to request the first page of images, overwriting the WordPress admin router's `page=CiviCRM`. WordPress rejected the request with 403 before CiviCRM ran. This occurred even after the AJAX request had been moved onto the working gallery URL.
 
 The fix sends the gallery's pagination parameter as `mg_page` and reads `mg_page` server-side. WordPress's `page=CiviCRM` is now preserved. Regression test: `node tests/pagination-route.js`. The request should look like `wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fmosaicogallery&mg_ajax=1&action=list&mg_page=1` (query order may vary).
+
+## Image groups (0.2.0-beta1)
+
+- Create **up to ten** groups with your own headings (1–80 Unicode characters).
+- Rename or remove groups. Removing a group puts its images back into **Ungrouped**; files, thumbnails, historical email HTML and URLs are unchanged.
+- An image belongs to **one group at a time**, or **Ungrouped**. No virtual folders are created on disk.
+- From the manager, select a group to filter images. Change an image's group from its card, or select several images on the current page and click **Apply group** for bulk assignment.
+- In the Mosaico editor, use **Image group** in the floating toolbar to filter the gallery by any group or Ungrouped; reopen the image library for changes to apply. Archived images remain hidden in every group.
+- The manager shows the number of images assigned to each group (including archived images still on disk). Group headings are managed by CiviCRM administrators.
+
+### Important: database upgrade for existing installations
+
+This release adds two **extension-owned database tables**: `civicrm_mosaicogallery_group` and `civicrm_mosaicogallery_image_group`. The existing `civicrm_mosaicogallery_image` table is unchanged, retaining archive flags and usage counts.
+
+**Back up the CiviCRM database before upgrading.** After deploying with Git, run:
+
+```bash
+cd /home/bertie/public_html/wp/wp-content/uploads/civicrm/ext/mosaico-gallery-manager-main
+git pull --ff-only origin main
+
+cd /home/bertie/public_html/wp
+cv ext:upgrade-db
+cv flush
+```
+
+Alternatively, apply pending database upgrades in **CiviCRM → Administer → System Settings → Extensions**. Run the upgrade before creating or assigning groups. The gallery still lists ungrouped images if the migration has not run, but group actions will be disabled and it will display an upgrade reminder.
+
+**Regression tests** (no live database changes):
+```bash
+php tests/groups.php
+php tests/group-upgrade.php
+node tests/pagination-route.js
+node tests/preview-editor-filter.js
+```
+
+Test on a staging clone first. Existing archived images remain archived, and changing or deleting groups never deletes or relocates images.
