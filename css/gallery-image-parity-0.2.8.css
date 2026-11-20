@@ -1,0 +1,90 @@
+/*
+ * Theme-aware image parity for the Mosaico Gallery Manager.
+ *
+ * BEC's theme detection provides data-mg-style-profile on the app root.
+ * Unlike the original .mg-picture img declaration, these rules explicitly
+ * override River's default sizing of images inside buttons.
+ *
+ * Use the SAME image geometry in both The Island (legacy) and River:
+ * a full tile-width button with an aspect-ratio of 4:3, and a fully filling
+ * image that crops only when the source's proportions differ.
+ *
+ * Scope ALL rules to this extension. Do not alter the embedded Mosaico editor,
+ * WordPress toolbar, or other CiviCRM buttons/images.
+ */
+#mosaicogallery-app[data-mg-style-profile] .mg-grid > article.mg-card {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+#mosaicogallery-app[data-mg-style-profile] .mg-grid > article.mg-card > button.mg-picture.mg-picture-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  display: block !important;
+  float: none !important;
+  flex: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 4 / 3 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #f2f4f6 !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-align: left !important;
+  text-indent: 0 !important;
+  vertical-align: top !important;
+  overflow: hidden !important;
+  cursor: pointer;
+}
+
+#mosaicogallery-app[data-mg-style-profile] .mg-grid > article.mg-card > button.mg-picture.mg-picture-select > img {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  float: none !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  vertical-align: middle !important;
+}
+
+/*
+ * River's global control reset has more forceful button/image styling than
+ * legacy Island. Use the detected River profile to reinforce the exact same
+ * dimensions, without altering any surrounding global theme stylesheet.
+ */
+#mosaicogallery-app[data-mg-style-profile="river"] .mg-grid > article.mg-card > button.mg-picture.mg-picture-select {
+  inline-size: 100% !important;
+  block-size: auto !important;
+  min-block-size: 0 !important;
+  max-inline-size: 100% !important;
+  aspect-ratio: 4 / 3 !important;
+}
+
+#mosaicogallery-app[data-mg-style-profile="river"] .mg-grid > article.mg-card > button.mg-picture.mg-picture-select > img {
+  inline-size: 100% !important;
+  block-size: 100% !important;
+  max-inline-size: none !important;
+  object-fit: cover !important;
+}
