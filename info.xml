@@ -5,8 +5,8 @@
   <description>Manage Mosaico images with groups, search, archive flags and usage statistics, preserving historic mailing images.</description>
   <license>AGPL-3.0-or-later</license>
   <maintainer><author>BEC</author></maintainer>
-  <releaseDate>2026-10-31</releaseDate>
-  <version>0.2.7-beta8</version>
+  <releaseDate>2026-11-20</releaseDate>
+  <version>0.2.8-beta9</version>
   <develStage>beta</develStage>
   <compatibility><ver>5.70</ver></compatibility>
   <requires><ext>uk.co.vedaconsulting.mosaico</ext></requires>
