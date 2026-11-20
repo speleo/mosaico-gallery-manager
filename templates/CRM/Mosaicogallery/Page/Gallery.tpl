@@ -1,4 +1,4 @@
-<div id="mosaicogallery-app" data-api="{$galleryApiUrl|escape:'html'}" data-token="{$galleryCsrfToken|escape:'html'}">
+<div id="mosaicogallery-app" data-api="{$galleryApiUrl|escape:'html'}" data-token="{$galleryCsrfToken|escape:'html'}" data-mg-style-profile="{$galleryThemeProfile|escape:'html'}" data-mg-theme-key="{$galleryThemeKey|escape:'html'}">
   <div class="mg-header">
     <div>
       <p>Choose which images appear in new mailings. Archiving hides images from the editor but <strong>never deletes files or changes existing email URLs</strong>.</p>

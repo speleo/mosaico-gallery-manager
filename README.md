@@ -242,3 +242,15 @@ LIMIT 25;
 ```
 
 After a successful recount, these images should have their own usage-index rows. The scan's reported count and the gallery thumbnails will then come from the same persisted source. This is covered by the integration test `php tests/usage-scan.php`, which deliberately starts with a grouped image missing from the usage-index table and verifies that it is created and correctly displayed; it also simulates a silent SQL failure to ensure it cannot report false success.
+
+## The Island / The Island + River thumbnail parity (0.2.8-beta9)
+
+**Issue:** Changing the active CiviCRM theme from The Island to The Island + River caused the Gallery Manager's images to shrink into tiny pictures at the upper-left of otherwise full-width image tiles. The River theme applies global rules to buttons and images, which can override the simple `.mg-picture img { width:100%; height:100%; }` definitions in the Gallery Manager.
+
+**Detection:** Gallery Manager now uses the same per-request approach as BEC Membership Tools, via `Civi::service('themes')->getActiveThemeKey()` and inherited theme `search_order` metadata. `CRM_Mosaicogallery_ThemeProfile::detect()` resolves to `legacy` (The Island) or `river` (The Island + River and River derivatives), without changing the selected global theme. The root element provides `data-mg-style-profile` and `data-mg-theme-key` attributes so the result can be verified in developer tools.
+
+**Layout:** The new last-loaded `css/gallery-image-parity-0.2.8.css` is scoped solely to `#mosaicogallery-app`. For either theme, each image-select button occupies **100% of its tile's width** with a consistent **4:3 aspect ratio**, and the contained image fills that area with `object-fit:cover`, cropping rather than distorting when the source aspect ratio differs. The image is absolutely positioned inside the aspect-ratio button so no global button padding, inherited line-height or restrictive `img max-width` can collapse its dimensions. When the River profile is detected, extra scoped `inline-size` / `block-size` overrides neutralise River theme defaults. No gallery inventory, image URLs, saved group assignments, or editor image-picker styling is changed.
+
+**Verification:** `php tests/theme-profile.php` validates legacy/River detection including inherited River keys. `node tests/gallery-image-parity.js` checks fixed full-width image geometry, CSS isolation, renderer hierarchy and correct asset load order. These run in GitHub Actions before merging the pull request. Browser screenshots should still be compared after deployment: a CSS source test cannot guarantee pixel-identical rendering without live computed-style inspection.
+
+**Update:** Pull `main`, clear CiviCRM's CSS/resource cache and hard-reload Gallery Manager under both themes. Confirm the first row's photos fill the tile width and inspect the root's `data-mg-style-profile` (`legacy` vs `river`). No database migration is required.

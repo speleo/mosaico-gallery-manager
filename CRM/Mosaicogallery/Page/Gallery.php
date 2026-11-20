@@ -16,6 +16,11 @@ class CRM_Mosaicogallery_Page_Gallery extends CRM_Core_Page {
     $session->set('mosaicogallery_csrf', $token);
     $this->assign('galleryApiUrl', CRM_Utils_System::url('civicrm/mosaicogallery/api', 'reset=1', TRUE, NULL, FALSE, FALSE, TRUE));
     $this->assign('galleryCsrfToken', $token);
+    // Match the per-request CiviCRM active-theme detection in BEC Membership
+    // Tools. The profile controls only this extension's image-sizing rules.
+    $theme = CRM_Mosaicogallery_ThemeProfile::detect();
+    $this->assign('galleryThemeProfile', $theme['profile']);
+    $this->assign('galleryThemeKey', $theme['key']);
     // Register the extension template only when this page is requested.
     // CiviCRM 6.x wraps Smarty and forwards methods through __call(), so
     // method_exists($smarty, 'getTemplateDir') is NOT a valid capability test.
@@ -31,6 +36,8 @@ class CRM_Mosaicogallery_Page_Gallery extends CRM_Core_Page {
 
     $resources = CRM_Core_Resources::singleton();
     $resources->addStyleFile('org.bec.mosaicogallery', 'css/admin.css');
+    // Load last, overriding only the gallery's thumbnail button and image.
+    $resources->addStyleFile('org.bec.mosaicogallery', 'css/gallery-image-parity-0.2.8.css');
     $resources->addScriptFile('org.bec.mosaicogallery', 'js/admin.js');
     parent::run();
   }
