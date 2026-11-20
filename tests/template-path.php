@@ -51,10 +51,17 @@ mosaicogallery_civicrm_config($config);
 if (CRM_Core_Smarty::singleton()->additions() !== 0) {
   throw new RuntimeException('Config hook should not access Smarty');
 }
+// CiviCRM autoloads this class in production. Explicitly include it in
+// the standalone Smarty page test, which has no CiviCRM autoloader.
+require_once dirname(__DIR__) . '/CRM/Mosaicogallery/ThemeProfile.php';
 require_once dirname(__DIR__) . '/CRM/Mosaicogallery/Page/Gallery.php';
 $page = new CRM_Mosaicogallery_Page_Gallery();
 $page->run();
 $page->run();
+if ($page->getAssigned('galleryThemeProfile') !== 'legacy' ||
+    $page->getAssigned('galleryThemeKey') !== 'unknown') {
+  throw new RuntimeException('Theme fallback should be legacy without the CiviCRM theme service');
+}
 
 $apiUrl = $page->getAssigned('galleryApiUrl');
 // Smarty escapes the attribute when producing markup; the browser decodes it
