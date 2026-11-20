@@ -16,7 +16,7 @@ const admin = fs.readFileSync(path.join(root, 'js/admin.js'), 'utf8');
 const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
 const rules = Array.from(noComments.matchAll(/([^{}]+)\{([^{}]+)\}/g),
   ([, selector, declarations]) => [selector.trim(), declarations]);
-assert.equal(rules.length, 4, 'one base button, base image, River button and River image rule');
+assert.equal(rules.length, 5, 'one card, base button, base image, River button and River image rule');
 assert.ok(rules.every(([selector]) => selector.startsWith('#mosaicogallery-app[data-mg-style-profile')),
   'parity styles must never affect other CRM/Mosaico image or button controls');
 
